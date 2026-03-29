@@ -45,6 +45,16 @@ class FairShareModel:
         for p in participants:
             if p in self.members:
                 self.members[p] -= share
+
+        new_record = {
+            "description": description,
+            "payer": payer,
+            "amount": amount,
+            "participants": participants
+        }
+        self.history.append(new_record) # 將紀錄加入列表
+        self.save_data() # 立即存檔
+        return True
         
         # 關鍵：這一行會讓明細出現
         self.history.append({
