@@ -66,3 +66,18 @@ with st.expander("📖 消費歷史明細"):
     for item in reversed(st.session_state.app.history):
         st.write(f"**{item['description']}**")
         st.caption(f"{item['payer']} 付了 ${item['amount']} (參與者: {', '.join(item['participants'])})")
+
+# --- 歷史紀錄顯示區塊 ---
+with st.expander("📖 消費歷史明細", expanded=True): # expanded=True 讓它預設展開
+    # 檢查 session_state 裡的 history 是否有資料
+    history_list = st.session_state.app.history
+    
+    if not history_list:
+        st.write("目前還沒有任何消費紀錄喔！")
+    else:
+        # 使用 reversed 讓最新的紀錄顯示在最上面
+        for i, item in enumerate(reversed(history_list)):
+            st.markdown(f"**{i+1}. {item['description']}**")
+            st.write(f"👉 **{item['payer']}** 支付了 `${item['amount']:.2f}`")
+            st.caption(f"參與平分的人: {', '.join(item['participants'])}")
+            st.divider()
