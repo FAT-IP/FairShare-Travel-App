@@ -2,28 +2,6 @@ import json
 import os
 
 class FairShareModel:
-    def delete_transaction_by_index(self, index):
-        """根據索引刪除特定的一筆紀錄並自動調整餘額"""
-        if 0 <= index < len(self.history):
-            # 1. 取得該筆交易資料
-            target = self.history.pop(index)
-            payer = target['payer']
-            amount = target['amount']
-            participants = target['participants']
-            
-            # 2. 反向計算餘額 (跟撤銷邏輯一樣)
-            share = round(amount / len(participants), 2)
-            if payer in self.members:
-                self.members[payer] -= amount
-            for p in participants:
-                if p in self.members:
-                    self.members[p] += share
-            
-            # 3. 存檔
-            self.save_data()
-            return True
-        return False
-    
     def __init__(self, filename="app_data.json"):
         self.filename = filename
         self.members = {}   
@@ -53,13 +31,12 @@ class FairShareModel:
         return False
 
     def remove_member(self, name):
-        """新增的刪除成員功能"""
         if name in self.members:
             if abs(self.members[name]) < 0.01:
                 del self.members[name]
                 self.save_data()
                 return True, "已移除成員"
-            return False, "該成員餘額不為0，請先結清帳目"
+            return False, "該成員餘額不為 0，請先結清"
         return False, "找不到成員"
 
     def record_transaction(self, payer, amount, participants, description=""):
@@ -72,15 +49,18 @@ class FairShareModel:
         self.save_data()
         return True
 
-    def delete_last_transaction(self):
-        if not self.history: return False
-        last = self.history.pop()
-        share = round(last['amount'] / len(last['participants']), 2)
-        self.members[last['payer']] -= last['amount']
-        for p in last['participants']:
-            if p in self.members: self.members[p] += share
-        self.save_data()
-        return True
+    def delete_transaction_by_index(self, index):
+        """這次報錯的主因：補上精確刪除邏輯"""
+        if 0 <= index < len(self.history):
+            target = self.history.pop(index)
+            payer, amount, participants = target['payer'], target['amount'], target['participants']
+            share = round(amount / len(participants), 2)
+            if payer in self.members: self.members[payer] -= amount
+            for p in participants:
+                if p in self.members: self.members[p] += share
+            self.save_data()
+            return True
+        return False
 
     def reset_all(self):
         self.members = {name: 0.0 for name in self.members}
