@@ -2,6 +2,28 @@ import json
 import os
 
 class FairShareModel:
+    def delete_transaction_by_index(self, index):
+        """根據索引刪除特定的一筆紀錄並自動調整餘額"""
+        if 0 <= index < len(self.history):
+            # 1. 取得該筆交易資料
+            target = self.history.pop(index)
+            payer = target['payer']
+            amount = target['amount']
+            participants = target['participants']
+            
+            # 2. 反向計算餘額 (跟撤銷邏輯一樣)
+            share = round(amount / len(participants), 2)
+            if payer in self.members:
+                self.members[payer] -= amount
+            for p in participants:
+                if p in self.members:
+                    self.members[p] += share
+            
+            # 3. 存檔
+            self.save_data()
+            return True
+        return False
+    
     def __init__(self, filename="app_data.json"):
         self.filename = filename
         self.members = {}   
