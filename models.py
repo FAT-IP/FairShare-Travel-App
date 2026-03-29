@@ -56,9 +56,12 @@ class FairShareModel:
                 self.history = []
 
     def save_data(self):
-        with open(self.filename, 'w', encoding='utf-8') as f:
-            json.dump({"members": self.members, "history": self.history}, f, indent=4, ensure_ascii=False)
-
+    data_to_save = {
+        "members": self.members,
+        "history": self.history
+    }
+    with open(self.filename, 'w', encoding='utf-8') as f:
+        json.dump(data_to_save, f, indent=4, ensure_ascii=False)
     def add_member(self, name):
         if name and name not in self.members:
             self.members[name] = 0.0
