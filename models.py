@@ -56,7 +56,7 @@ class FairShareModel:
                 self.history = []
 
     def save_data(self):
-    data_to_save = {
+        data_to_save = {
         "members": self.members,
         "history": self.history
     }
