@@ -4,6 +4,7 @@ from models import FairShareModel
 if 'app' not in st.session_state:
     st.session_state.app = FairShareModel()
 
+app = st.session_state.app # 之後都用這個 app
 st.title("✈️ 專業旅行分帳工具")
 
 # --- 側邊欄：成員管理 ---
