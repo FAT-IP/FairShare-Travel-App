@@ -62,12 +62,6 @@ with col_right:
             st.success("已撤銷")
             st.rerun()
 
-with st.expander("📖 消費歷史明細"):
-    for item in reversed(st.session_state.app.history):
-        st.write(f"**{item['description']}**")
-        st.caption(f"{item['payer']} 付了 ${item['amount']} (參與者: {', '.join(item['participants'])})")
-
-# --- 歷史紀錄顯示區塊 ---
 with st.expander("📖 消費歷史明細", expanded=True): # expanded=True 讓它預設展開
     # 檢查 session_state 裡的 history 是否有資料
     history_list = st.session_state.app.history
