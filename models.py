@@ -2,6 +2,26 @@ import json
 import os
 
 class FairShareModel:
+    def delete_last_transaction(self):
+        """撤銷最後一筆紀錄並還原餘額"""
+        if not self.history:
+            return False
+            
+        last = self.history.pop() # 取出最後一筆明細
+        payer = last['payer']
+        amount = last['amount']
+        participants = last['participants']
+        
+        # 反向還原：付錢的人減掉，分擔的人加回來
+        share = round(amount / len(participants), 2)
+        self.members[payer] -= amount
+        for p in participants:
+            if p in self.members:
+                self.members[p] += share
+        
+        self.save_data() # 存檔
+        return True
+        
     def __init__(self, filename="app_data.json"):
         self.filename = filename
         self.members = {}   # 儲存姓名與餘額
