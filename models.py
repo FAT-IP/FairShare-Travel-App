@@ -4,8 +4,8 @@ import os
 class FairShareModel:
     def __init__(self, filename="app_data.json"):
         self.filename = filename
-        self.members = {}   # 格式: {"姓名": 淨額}
-        self.history = []   # 格式: [{"description": "...", "payer": "...", ...}]
+        self.members = {}   
+        self.history = []   
         self.load_data()
 
     def load_data(self):
@@ -13,21 +13,15 @@ class FairShareModel:
             try:
                 with open(self.filename, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    # 這裡要確保能讀取到 members 和 history
                     if isinstance(data, dict):
                         self.members = data.get("members", {})
                         self.history = data.get("history", [])
             except:
-                self.members = {}
-                self.history = []
+                self.members, self.history = {}, []
 
     def save_data(self):
-        # 存檔時要把兩者都包進去
         with open(self.filename, 'w', encoding='utf-8') as f:
-            json.dump({
-                "members": self.members, 
-                "history": self.history
-            }, f, indent=4, ensure_ascii=False)
+            json.dump({"members": self.members, "history": self.history}, f, indent=4, ensure_ascii=False)
 
     def add_member(self, name):
         if name and name not in self.members:
@@ -36,51 +30,42 @@ class FairShareModel:
             return True
         return False
 
+    def remove_member(self, name):
+        """新增的刪除成員功能"""
+        if name in self.members:
+            if abs(self.members[name]) < 0.01:
+                del self.members[name]
+                self.save_data()
+                return True, "已移除成員"
+            return False, "該成員餘額不為0，請先結清帳目"
+        return False, "找不到成員"
+
     def record_transaction(self, payer, amount, participants, description=""):
-        if payer not in self.members or not participants:
-            return False
-        
+        if payer not in self.members or not participants: return False
         share = round(amount / len(participants), 2)
         self.members[payer] += amount
         for p in participants:
-            if p in self.members:
-                self.members[p] -= share
-
-        new_record = {
-            "description": description,
-            "payer": payer,
-            "amount": amount,
-            "participants": participants
-        }
-        self.history.append(new_record) # 將紀錄加入列表
-        self.save_data() # 立即存檔
-        return True
-        
-        # 關鍵：這一行會讓明細出現
-        self.history.append({
-            "description": description,
-            "payer": payer,
-            "amount": amount,
-            "participants": participants
-        })
+            if p in self.members: self.members[p] -= share
+        self.history.append({"description": description, "payer": payer, "amount": amount, "participants": participants})
         self.save_data()
         return True
 
     def delete_last_transaction(self):
-        """撤銷最後一筆"""
-        if not self.history:
-            return False
+        if not self.history: return False
         last = self.history.pop()
         share = round(last['amount'] / len(last['participants']), 2)
         self.members[last['payer']] -= last['amount']
         for p in last['participants']:
-            if p in self.members:
-                self.members[p] += share
+            if p in self.members: self.members[p] += share
         self.save_data()
         return True
 
+    def reset_all(self):
+        self.members = {name: 0.0 for name in self.members}
+        self.history = []
+        self.save_data()
+
     def calculate_settlement(self):
-        # 結算邏輯
         debtors = [[n, b] for n, b in self.members.items() if b < -0.01]
         creditors = [[n, b] for n, b in self.members.items() if b > 0.01]
         instructions = []
