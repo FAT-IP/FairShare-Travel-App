@@ -42,9 +42,9 @@ if 'first_load_done' not in st.session_state:
 # --- 2. 多房間邏輯初始化 ---
 # 在側邊欄讓用戶輸入代碼
 with st.sidebar:
-    st.title("🔑 房間系統")
+    st.title("房間系統")
     trip_code = st.text_input("輸入旅程代碼 (建立獨立帳本)", value="default", help="輸入相同的代碼即可與好友同步帳本，不同代碼的資料完全隔離。")
-    st.info(f"📍 目前位置：{trip_code}")
+    st.info(f"房間：{trip_code}")
 
 # 如果切換了代碼，重新初始化 Model
 if 'current_trip' not in st.session_state or st.session_state.current_trip != trip_code:
@@ -128,7 +128,7 @@ with st.sidebar:
 col_left, col_right = st.columns([3, 2], gap="large")
 
 with col_left:
-    st.markdown("### 💸 紀錄支出")
+    st.markdown("### 紀錄支出")
     if not members:
         if lottie_empty: st_lottie(lottie_empty, height=180)
         st.info("請先在左側新增成員，開啟這趟旅程！")
@@ -167,7 +167,7 @@ with col_left:
             """, unsafe_allow_html=True)
 
 with col_right:
-    st.markdown("### 📊 結算與管理")
+    st.markdown("### 結算與管理")
     if lottie_money: st_lottie(lottie_money, height=150, key="money")
     
     if st.button("✨ 生成結算建議", use_container_width=True, type="primary"):
