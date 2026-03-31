@@ -55,18 +55,22 @@ if 'first_load_done' not in st.session_state:
     placeholder.empty()
     st.session_state.first_load_done = True
 
-# --- 2. 多房間邏輯初始化 ---
+# --- 2. 多房間邏輯初始化 (修正 AttributeError 潛在風險) ---
 with st.sidebar:
     st.title("🏠 房間系統")
-    trip_code = st.text_input("輸入旅程代碼 (例如：Japan123)", value="")
+    trip_code = st.text_input("輸入旅程代碼", value="")
     
-    if 'app' not in st.session_state or st.session_state.get('current_trip') != trip_code:
+    # 確保 session_state 鍵值存在
+    if 'current_trip' not in st.session_state:
+        st.session_state.current_trip = trip_code
+    
+    if 'app' not in st.session_state or st.session_state.current_trip != trip_code:
         st.session_state.app = FairShareModel(trip_id=trip_code)
         st.session_state.current_trip = trip_code
     
-    st.info(f"📍 目前房間：{trip_code}")
+    st.info(f"房間：{trip_code}")
 
-# --- 3. 恢復豐富漸層與對比度強化 CSS (含側邊欄優化) ---
+# --- 3. 恢復豐富漸層與對比度強化 CSS ---
 st.markdown("""
     <style>
     /* 全域背景 */
@@ -77,24 +81,24 @@ st.markdown("""
 
     /* 側邊欄文字優化 */
     [data-testid="stSidebar"] {
-        background-color: rgba(255, 255, 255, 0.3);
-        backdrop-filter: blur(10px);
+        background-color: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(15px);
     }
     [data-testid="stSidebar"] .stMarkdown p, 
     [data-testid="stSidebar"] label {
-        color: #311B92 !important; /* 深紫色確保標籤清晰 */
-        font-weight: 700 !important;
-        font-size: 1.05rem !important;
+        color: #283593 !important; /* 更沉穩的深藍紫色 */
+        font-weight: 800 !important;
+        font-size: 1.1rem !important;
     }
     [data-testid="stSidebar"] h1, 
     [data-testid="stSidebar"] h2 {
-        color: #4527A0 !important;
+        color: #1A237E !important;
         font-weight: 900 !important;
     }
     /* 側邊欄輸入框文字顏色 */
     [data-testid="stSidebar"] input {
-        color: #1A237E !important;
-        font-weight: 500 !important;
+        color: #0D47A1 !important;
+        font-weight: 600 !important;
     }
 
     /* 頂部橫幅 */
@@ -125,8 +129,8 @@ st.markdown("""
     .info-card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); }
     
     .info-card h4 { color: #4A00E0 !important; font-weight: 900; margin-bottom: 10px !important; }
-    .info-card p, .info-card b { color: #1A1A1A !important; font-size: 1.1em; }
-    .info-card small { color: #555555 !important; font-weight: 500; }
+    .info-card p, .info-card b { color: #000000 !important; font-size: 1.15em; } /* 加黑文字 */
+    .info-card small { color: #333333 !important; font-weight: 700; font-size: 0.95em; } /* 加黑分擔對象 */
 
     /* 餘額卡片 */
     .balance-card {
@@ -139,7 +143,7 @@ st.markdown("""
         transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     .balance-card:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-    .balance-name { color: #1A237E !important; font-weight: 800; font-size: 1.15em; display: block; margin-bottom: 5px; }
+    .balance-name { color: #1A1A1A !important; font-weight: 900; font-size: 1.2em; display: block; margin-bottom: 5px; }
     
     /* 按鈕樣式 */
     .stButton>button {
@@ -157,7 +161,25 @@ st.markdown("""
         box-shadow: 0 8px 25px rgba(118, 75, 162, 0.4);
     }
     
-    h3 { color: #4A00E0 !important; font-weight: 900 !important; border-bottom: 3px solid #764ba2; display: inline-block; padding-bottom: 5px; margin-bottom: 25px !important; }
+    /* 修改提示框顏色（針對綠色與黃色優化） */
+    .stAlert {
+        border-radius: 15px !important;
+        border: none !important;
+        padding: 1rem !important;
+    }
+    /* 修正綠色提示：背景更飽和，文字改為深綠色 */
+    div[data-testid="stNotification"] {
+        background-color: #C8E6C9 !important; /* 飽和淺綠背景 */
+        color: #1B5E20 !important; /* 極深綠色文字 */
+        border: 1px solid #81C784 !important;
+    }
+    div[data-testid="stNotification"] p {
+        color: #1B5E20 !important;
+        font-weight: 800 !important;
+        font-size: 1.1em !important;
+    }
+    
+    h3 { color: #311B92 !important; font-weight: 900 !important; border-bottom: 3px solid #764ba2; display: inline-block; padding-bottom: 5px; margin-bottom: 25px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -165,7 +187,7 @@ st.markdown("""
 st.markdown(f"""
     <div class="main-banner">
         <h1 style="margin: 0; font-size: 3.5em; font-weight: 900; letter-spacing: 3px;">✈️ FairShare</h1>
-        <p style="font-size: 1.3em; opacity: 0.95; margin-top: 15px; font-weight: 500;">房間代碼：<span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 8px; font-family: monospace;">{trip_code}</span></p>
+        <p style="font-size: 1.3em; opacity: 0.95; margin-top: 15px; font-weight: 500;">旅程代碼：<span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 8px; font-family: monospace;">{trip_code}</span></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -185,11 +207,12 @@ with st.sidebar:
         st.subheader("💰 實時餘額")
         for m in members:
             bal = st.session_state.app.members[m]
-            color = "#1B5E20" if bal >= 0 else "#B71C1C" # 使用更深的紅綠色確保對比
+            # 餘額顏色：加深以提升對比
+            color = "#004D40" if bal >= 0 else "#880E4F" 
             st.markdown(f"""
-                <div class="balance-card" style="border-left: 6px solid {color};">
+                <div class="balance-card" style="border-left: 8px solid {color};">
                     <span class="balance-name">{m}</span>
-                    <span style="color: {color}; font-weight: 900; font-size: 1.3em;">{'+' if bal > 0 else ''}${bal:,.2f}</span>
+                    <span style="color: {color}; font-weight: 900; font-size: 1.4em;">{'+' if bal > 0 else ''}${bal:,.2f}</span>
                 </div>
             """, unsafe_allow_html=True)
         
@@ -229,14 +252,14 @@ with col_left:
     st.markdown("### 📖 消費流水帳")
     history = st.session_state.app.history
     if not history:
-        st.markdown("<p style='color: #444; font-style: italic;'>尚無紀錄。</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #222; font-style: italic; font-weight: 600;'>目前尚無任何紀錄。</p>", unsafe_allow_html=True)
     else:
         for item in reversed(history):
             st.markdown(f"""
             <div class="info-card">
                 <h4>{item['description'] if item['description'] else '一般支出'}</h4>
                 <p><b>{item['payer']}</b> 支付了 <b>${item['amount']:,.2f}</b></p>
-                <small>參與者: {', '.join(item['participants'])}</small>
+                <small>分擔對象: {', '.join(item['participants'])}</small>
             </div>
             """, unsafe_allow_html=True)
 
@@ -248,10 +271,10 @@ with col_right:
         advices = st.session_state.app.calculate_settlement()
         if not advices:
             st.snow()
-            st.success("目前帳目完全平衡！")
+            st.success("🎉 目前帳目完全平衡！")
         else:
             for a in advices:
-                st.warning(a)
+                st.warning(f"💡 {a}")
     
     st.divider()
     st.markdown("### ⚙️ 管理控制")
@@ -274,4 +297,4 @@ with col_right:
             st.session_state.app.reset_all()
             st.rerun()
 
-st.markdown("<br><p style='text-align: center; color: #4A00E0; font-weight: 800;'>FairShare | 讓每一趟旅程更公平、更優雅</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; color: #1A237E; font-weight: 900; font-size: 1.1em;'>FairShare | 讓每一趟旅程更公平、更優雅</p>", unsafe_allow_html=True)
