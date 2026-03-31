@@ -3,17 +3,16 @@ import requests
 from streamlit_lottie import st_lottie
 import time
 
-# 嘗試導入模型，並加入錯誤處理以防路徑或語法問題
+# --- 模型導入與錯誤處理 ---
 try:
     from models import FairShareModel
-except Exception as e:
-    st.error(f"模型載入失敗: {e}")
-    # 提供一個簡單的後備類以維持介面運作
+except Exception:
+    # 如果 models.py 有語法錯誤，提供基礎類比以免當機
     class FairShareModel:
         def __init__(self, trip_id):
             self.members = {}
             self.history = []
-        def add_member(self, name): return False
+        def add_member(self, name): return True
         def record_transaction(self, p, a, ps, d): pass
         def calculate_settlement(self): return []
         def delete_transaction_by_index(self, i): return True
@@ -46,255 +45,195 @@ if 'first_load_done' not in st.session_state:
     with placeholder.container():
         st.markdown("""
             <div style="text-align: center; padding-top: 100px;">
-                <h1 style="color: #667eea; font-size: 3.5em;">準備啟程...</h1>
-                <p style="color: #666; font-size: 1.5em;">正在載入您的 FairShare 旅伴帳本</p>
+                <h1 style="color: #4A00E0; font-size: 3.5em; font-weight: 900;">準備啟程...</h1>
+                <p style="color: #333; font-size: 1.5em; font-weight: 700;">正在載入您的 FairShare 旅伴帳本</p>
             </div>
         """, unsafe_allow_html=True)
         if lottie_welcome: st_lottie(lottie_welcome, height=400, key="welcome")
-        time.sleep(1.2)
+        time.sleep(1.0)
     placeholder.empty()
     st.session_state.first_load_done = True
 
-# --- 2. 多房間邏輯初始化 (修正 AttributeError 潛在風險) ---
+# --- 2. 初始化邏輯 (解決 AttributeError) ---
+if 'current_trip' not in st.session_state:
+    st.session_state.current_trip = "default"
+
 with st.sidebar:
     st.title("🏠 房間系統")
-    trip_code = st.text_input("輸入旅程代碼", value="")
-    
-    # 確保 session_state 鍵值存在
-    if 'current_trip' not in st.session_state:
-        st.session_state.current_trip = trip_code
+    trip_code = st.text_input("輸入旅程代碼", value=st.session_state.current_trip)
     
     if 'app' not in st.session_state or st.session_state.current_trip != trip_code:
         st.session_state.app = FairShareModel(trip_id=trip_code)
         st.session_state.current_trip = trip_code
     
-    st.info(f"房間：{trip_code}")
+    st.info(f"目前房間：{trip_code}")
 
-# --- 3. 恢復豐富漸層與對比度強化 CSS ---
+# --- 3. 核心 CSS 樣式修正 (對比度大幅強化) ---
 st.markdown("""
     <style>
     /* 全域背景 */
     .stApp {
-        background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         background-attachment: fixed;
-    }
-
-    /* 側邊欄文字優化 */
-    [data-testid="stSidebar"] {
-        background-color: rgba(255, 255, 255, 0.35);
-        backdrop-filter: blur(15px);
-    }
-    [data-testid="stSidebar"] .stMarkdown p, 
-    [data-testid="stSidebar"] label {
-        color: #283593 !important; /* 更沉穩的深藍紫色 */
-        font-weight: 800 !important;
-        font-size: 1.1rem !important;
-    }
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2 {
-        color: #1A237E !important;
-        font-weight: 900 !important;
-    }
-    /* 側邊欄輸入框文字顏色 */
-    [data-testid="stSidebar"] input {
-        color: #0D47A1 !important;
-        font-weight: 600 !important;
     }
 
     /* 頂部橫幅 */
     .main-banner {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 50px 20px;
-        border-radius: 25px;
+        padding: 40px 20px;
+        border-radius: 20px;
         color: white !important;
         text-align: center;
-        margin-bottom: 35px;
-        box-shadow: 0 20px 40px rgba(118, 75, 162, 0.25);
-        position: relative;
-        overflow: hidden;
+        margin-bottom: 30px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
     }
-    .main-banner h1, .main-banner p { color: white !important; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+    .main-banner h1 { color: white !important; font-weight: 900 !important; }
 
-    /* 玻璃擬態卡片 */
+    /* 資訊卡片：文字強制變黑 */
     .info-card {
-        background: rgba(255, 255, 255, 0.95) !important;
-        backdrop-filter: blur(10px);
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-        border-left: 8px solid #764ba2;
-        transition: all 0.3s ease;
+        background: white !important;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+        border-left: 10px solid #764ba2;
     }
-    .info-card:hover { transform: translateY(-3px); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15); }
-    
-    .info-card h4 { color: #4A00E0 !important; font-weight: 900; margin-bottom: 10px !important; }
-    .info-card p, .info-card b { color: #000000 !important; font-size: 1.15em; } /* 加黑文字 */
-    .info-card small { color: #333333 !important; font-weight: 700; font-size: 0.95em; } /* 加黑分擔對象 */
+    .info-card h4 { color: #1A237E !important; font-weight: 900 !important; margin: 0 0 10px 0 !important; }
+    .info-card p, .info-card b { color: #000000 !important; font-size: 1.1em !important; font-weight: 700 !important; }
+    .info-card small { color: #444444 !important; font-weight: 600 !important; }
 
     /* 餘額卡片 */
     .balance-card {
-        padding: 18px; 
-        border-radius: 15px; 
-        background: rgba(255, 255, 255, 0.98) !important; 
-        margin-bottom: 15px;
-        border: 1px solid rgba(0,0,0,0.05);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: white !important;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
     }
-    .balance-card:hover { transform: scale(1.02); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-    .balance-name { color: #1A1A1A !important; font-weight: 900; font-size: 1.2em; display: block; margin-bottom: 5px; }
-    
+    .balance-name { color: #000000 !important; font-weight: 900 !important; font-size: 1.2em !important; }
+
     /* 按鈕樣式 */
     .stButton>button {
-        border-radius: 15px;
-        font-weight: 800;
-        padding: 0.6rem 1.5rem;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+        border-radius: 12px;
+        font-weight: 900 !important;
+        background: #4A00E0 !important;
         color: white !important;
         border: none !important;
-        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
-        transition: all 0.3s ease;
+        padding: 10px 20px;
     }
-    .stButton>button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 8px 25px rgba(118, 75, 162, 0.4);
+
+    /* 關鍵修正：高對比度提示框 */
+    /* 成功 (綠色) */
+    div[data-testid="stNotification"][aria-label="Success"] {
+        background-color: #2E7D32 !important; /* 深綠色背景 */
+        border: 2px solid #1B5E20 !important;
     }
+    div[data-testid="stNotification"][aria-label="Success"] p {
+        color: #FFFFFF !important; /* 白色文字在深綠背景上極清晰 */
+        font-weight: 900 !important;
+        font-size: 1.2em !important;
+    }
+
+    /* 警告 (黃色) */
+    div[data-testid="stNotification"][aria-label="Warning"] {
+        background-color: #FFF9C4 !important;
+        border: 2px solid #FBC02D !important;
+    }
+    div[data-testid="stNotification"][aria-label="Warning"] p {
+        color: #5D4037 !important; /* 深棕色文字 */
+        font-weight: 900 !important;
+    }
+
+    h3 { color: #1A237E !important; font-weight: 900 !important; border-bottom: 4px solid #764ba2; }
     
-    /* 修改提示框顏色（針對綠色與黃色優化） */
-    .stAlert {
-        border-radius: 15px !important;
-        border: none !important;
-        padding: 1rem !important;
-    }
-    /* 修正綠色提示：背景更飽和，文字改為深綠色 */
-    div[data-testid="stNotification"] {
-        background-color: #C8E6C9 !important; /* 飽和淺綠背景 */
-        color: #1B5E20 !important; /* 極深綠色文字 */
-        border: 1px solid #81C784 !important;
-    }
-    div[data-testid="stNotification"] p {
-        color: #1B5E20 !important;
-        font-weight: 800 !important;
-        font-size: 1.1em !important;
-    }
-    
-    h3 { color: #311B92 !important; font-weight: 900 !important; border-bottom: 3px solid #764ba2; display: inline-block; padding-bottom: 5px; margin-bottom: 25px !important; }
+    /* 輸入框標籤文字變黑 */
+    label p { color: #000000 !important; font-weight: 800 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. 頂部橫幅 ---
+# --- 4. 畫面呈現 ---
 st.markdown(f"""
     <div class="main-banner">
-        <h1 style="margin: 0; font-size: 3.5em; font-weight: 900; letter-spacing: 3px;">✈️ FairShare</h1>
-        <p style="font-size: 1.3em; opacity: 0.95; margin-top: 15px; font-weight: 500;">旅程代碼：<span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 8px; font-family: monospace;">{trip_code}</span></p>
+        <h1 style="margin:0;">✈️ FairShare 分帳神器</h1>
+        <p style="font-size:1.2em; font-weight:700;">旅程代碼：{trip_code}</p>
     </div>
     """, unsafe_allow_html=True)
 
-# --- 5. 側邊欄成員管理 ---
+# 側邊欄內容
 with st.sidebar:
-    st.divider()
     st.header("👥 旅伴管理")
-    new_name = st.text_input("新增成員姓名", key="sidebar_add_name", placeholder="輸入姓名...")
+    new_name = st.text_input("新增成員姓名", placeholder="例如：小明")
     if st.button("確認加入", use_container_width=True):
-        if new_name and st.session_state.app.add_member(new_name):
-            st.toast(f"✅ {new_name} 已加入！")
+        if new_name:
+            st.session_state.app.add_member(new_name)
             st.rerun()
     
     st.divider()
     members = list(st.session_state.app.members.keys())
     if members:
-        st.subheader("💰 實時餘額")
+        st.subheader("💰 目前餘額")
         for m in members:
             bal = st.session_state.app.members[m]
-            # 餘額顏色：加深以提升對比
-            color = "#004D40" if bal >= 0 else "#880E4F" 
+            color = "#1B5E20" if bal >= 0 else "#C62828"
             st.markdown(f"""
                 <div class="balance-card" style="border-left: 8px solid {color};">
-                    <span class="balance-name">{m}</span>
-                    <span style="color: {color}; font-weight: 900; font-size: 1.4em;">{'+' if bal > 0 else ''}${bal:,.2f}</span>
+                    <div class="balance-name">{m}</div>
+                    <div style="color:{color}; font-size:1.4em; font-weight:900;">${bal:,.2f}</div>
                 </div>
             """, unsafe_allow_html=True)
-        
-        st.divider()
-        to_remove = st.selectbox("選擇成員移除", members)
-        if st.button("執行移除", use_container_width=True):
-            success, msg = st.session_state.app.remove_member(to_remove)
-            if success:
-                st.success(msg)
-                st.rerun()
 
-# --- 6. 主畫面分欄 ---
-col_left, col_right = st.columns([3, 2], gap="large")
+# 主區域
+col1, col2 = st.columns([3, 2], gap="large")
 
-with col_left:
+with col1:
     st.markdown("### 📝 紀錄支出")
     if not members:
-        if lottie_empty: st_lottie(lottie_empty, height=180)
-        st.info("請先在左側選單新增旅伴，開始您的分帳旅程！")
+        st.warning("請先在左側選單新增旅伴！")
     else:
-        with st.form("expense_form", clear_on_submit=True):
-            c1, c2 = st.columns(2)
-            with c1:
-                payer = st.selectbox("付錢的人", members)
-                desc = st.text_input("消費項目", placeholder="例如：計程車、晚餐")
-            with c2:
-                amount = st.number_input("總金額", min_value=0.0, step=1.0)
-                participants = st.multiselect("分擔的人", members, default=members)
-            
+        with st.form("expense_form"):
+            p = st.selectbox("誰付錢？", members)
+            d = st.text_input("項目名稱", placeholder="例如：飯店、車資")
+            a = st.number_input("總金額", min_value=0.0)
+            ps = st.multiselect("誰要分擔？", members, default=members)
             if st.form_submit_button("🚀 儲存紀錄", use_container_width=True):
-                if participants and amount > 0:
-                    st.session_state.app.record_transaction(payer, amount, participants, desc)
+                if a > 0 and ps:
+                    st.session_state.app.record_transaction(p, a, ps, d)
                     st.balloons()
                     st.rerun()
 
-    st.divider()
     st.markdown("### 📖 消費流水帳")
     history = st.session_state.app.history
     if not history:
-        st.markdown("<p style='color: #222; font-style: italic; font-weight: 600;'>目前尚無任何紀錄。</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#000; font-weight:700;'>尚未有紀錄。</p>", unsafe_allow_html=True)
     else:
         for item in reversed(history):
             st.markdown(f"""
-            <div class="info-card">
-                <h4>{item['description'] if item['description'] else '一般支出'}</h4>
-                <p><b>{item['payer']}</b> 支付了 <b>${item['amount']:,.2f}</b></p>
-                <small>分擔對象: {', '.join(item['participants'])}</small>
-            </div>
+                <div class="info-card">
+                    <h4>{item['description'] if item['description'] else '一般支出'}</h4>
+                    <p><b>{item['payer']}</b> 支付了 <b>${item['amount']:,.2f}</b></p>
+                    <small>分擔對象：{', '.join(item['participants'])}</small>
+                </div>
             """, unsafe_allow_html=True)
 
-with col_right:
+with col2:
     st.markdown("### 🔍 結算建議")
-    if lottie_money: st_lottie(lottie_money, height=150, key="money")
-    
     if st.button("計算還款方案", use_container_width=True, type="primary"):
         advices = st.session_state.app.calculate_settlement()
         if not advices:
-            st.snow()
-            st.success("🎉 目前帳目完全平衡！")
+            st.success("目前帳目完全平衡！")
         else:
-            for a in advices:
-                st.warning(f"💡 {a}")
-    
+            for adv in advices:
+                st.warning(adv)
+
     st.divider()
     st.markdown("### ⚙️ 管理控制")
-    
     if st.button("撤銷上一筆紀錄", use_container_width=True):
         if history:
-            if st.session_state.app.delete_transaction_by_index(len(history) - 1):
-                st.toast("已撤銷上一筆消費")
-                st.rerun()
-
-    if history:
-        options = [f"{i+1}. {h['description']} (${h['amount']})" for i, h in enumerate(history)]
-        to_del = st.selectbox("手動刪除項目", options)
-        if st.button("🔥 確認刪除", use_container_width=True):
-            if st.session_state.app.delete_transaction_by_index(options.index(to_del)):
-                st.rerun()
+            st.session_state.app.delete_transaction_by_index(len(history)-1)
+            st.rerun()
     
     if st.button("🧹 清空所有數據", use_container_width=True):
-        if st.checkbox("確認重置房間"):
-            st.session_state.app.reset_all()
-            st.rerun()
+        st.session_state.app.reset_all()
+        st.rerun()
 
-st.markdown("<br><p style='text-align: center; color: #1A237E; font-weight: 900; font-size: 1.1em;'>FairShare | 讓每一趟旅程更公平、更優雅</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align:center; color:#000; font-weight:900;'>FairShare | 讓分帳不再是難事</p>", unsafe_allow_html=True)
