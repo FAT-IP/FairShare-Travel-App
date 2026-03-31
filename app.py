@@ -49,42 +49,70 @@ if 'current_trip' not in st.session_state or st.session_state.current_trip != tr
     st.session_state.app = FairShareModel(trip_id=trip_code)
     st.session_state.current_trip = trip_code
 
-# --- 3. 強制文字顏色 CSS ---
+# --- 3. 進階 UI 與美化背景 CSS ---
 st.markdown("""
     <style>
+    /* 全域背景設定 */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background-attachment: fixed;
+    }
+
+    /* 玻璃擬態卡片效果 */
     .info-card {
-        background-color: #f8f9fa !important;
+        background: rgba(255, 255, 255, 0.7) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
         margin-bottom: 15px;
         border-left: 6px solid #1E88E5;
+        border: 1px solid rgba(255, 255, 255, 0.18);
         color: #1a1a1a !important;
     }
-    .info-card h4 { color: #1565C0 !important; margin: 0 0 10px 0 !important; }
+    
+    .info-card h4 { color: #1565C0 !important; margin: 0 0 10px 0 !important; font-weight: 700; }
     .info-card p, .info-card b, .info-card small { color: #333333 !important; }
 
     .balance-card {
-        padding: 12px; 
-        border-radius: 10px; 
-        background-color: #ffffff !important; 
-        margin-bottom: 10px;
+        padding: 15px; 
+        border-radius: 12px; 
+        background: rgba(255, 255, 255, 0.9) !important; 
+        margin-bottom: 12px;
         border-left: 5px solid #ccc;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         color: #111111 !important;
+        transition: transform 0.2s ease;
     }
-    .balance-name { color: #111111 !important; font-weight: bold; font-size: 1.1em; display: block; }
+    .balance-card:hover { transform: scale(1.02); }
+    .balance-name { color: #111111 !important; font-weight: 700; font-size: 1.1em; display: block; }
     
-    .stButton>button { border-radius: 10px; font-weight: bold; transition: transform 0.2s; }
-    .stButton>button:hover { transform: translateY(-2px); }
+    /* 按鈕樣式優化 */
+    .stButton>button {
+        border-radius: 12px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        border: none;
+        box-shadow: 0 4px 10px rgba(30, 136, 229, 0.2);
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 15px rgba(30, 136, 229, 0.3);
+    }
+    
+    /* 調整 Markdown 標題顏色以適應背景 */
+    h3 { color: #1565C0 !important; font-weight: 800 !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 4. 頂部橫幅 ---
 st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); padding: 30px; border-radius: 15px; color: white; text-align: center; margin-bottom: 25px;">
-        <h1 style="margin: 0; font-size: 2.8em;">FairShare</h1>
-        <p style="font-size: 1.2em; opacity: 0.9;">旅程代碼：{trip_code}</p>
+    <div style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); padding: 40px; border-radius: 20px; color: white; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+        <h1 style="margin: 0; font-size: 3em; font-weight: 900; letter-spacing: 2px;">✈️ FairShare</h1>
+        <p style="font-size: 1.2em; opacity: 0.9; margin-top: 10px;">旅程代碼：<span style="background: rgba(255,255,255,0.2); padding: 2px 10px; border-radius: 5px;">{trip_code}</span></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -202,4 +230,4 @@ with col_right:
             st.session_state.app.reset_all()
             st.rerun()
 
-st.markdown("<br><p style='text-align: center; color: #888;'>FairShare | 獨立帳本系統</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; color: #555; font-weight: 600;'>FairShare | 獨立帳本系統</p>", unsafe_allow_html=True)
