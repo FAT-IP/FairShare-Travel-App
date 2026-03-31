@@ -6,18 +6,26 @@ import random
 import string
 import secrets
 import os
-from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-# --- 1. 獲取私有標記 (用於完全私有化) ---
+# --- 1. 獲取私有標記 (優化為 URL 持久化) ---
 def get_user_unique_id():
     """
     獲取使用者的唯一識別碼。
-    優先使用 session_state 中的固定 ID，若無則生成一個並設法保留。
+    從 URL 參數讀取以確保重新整理後依然相同，若無則生成新的並寫入 URL。
     """
-    if 'user_private_key' not in st.session_state:
-        # 生成一個 12 位的隨機金鑰作為該使用者的私有大廳標記
+    # 嘗試從 URL 讀取 'lobby_key'
+    query_params = st.query_params
+    
+    if "lobby_key" in query_params:
+        st.session_state.user_private_key = query_params["lobby_key"]
+    elif 'user_private_key' not in st.session_state:
+        # 生成一個 12 位的隨機金鑰
         alphabet = string.ascii_letters + string.digits
-        st.session_state.user_private_key = ''.join(secrets.choice(alphabet) for _ in range(12))
+        new_key = ''.join(secrets.choice(alphabet) for _ in range(12))
+        st.session_state.user_private_key = new_key
+        # 將金鑰寫入 URL 參數，這樣重新整理就會保留
+        st.query_params["lobby_key"] = new_key
+        
     return st.session_state.user_private_key
 
 # --- 2. 資料庫連線函式 ---
@@ -29,10 +37,10 @@ def get_db_connection(trip_id):
     if safe_id == "default":
         # 獲取本機/本人的唯一金鑰
         u_id = get_user_unique_id()
-        # 檔名包含唯一金鑰，確保全世界只有這台裝置的這組 Session 能對應到這個檔案
+        # 檔名包含唯一金鑰
         db_name = f"trip_data_private_lobby_{u_id}.db"
     else:
-        # 如果是共享房間，則使用原始代碼，方便多人同步
+        # 如果是共享房間，則使用原始代碼
         clean_id = "".join([c for c in safe_id if c.isalnum() or c in ('-', '_')]).strip()
         db_name = f"trip_data_shared_{clean_id}.db"
     
@@ -105,7 +113,7 @@ with st.sidebar:
     if is_lobby:
         u_key = get_user_unique_id()
         st.success(f"✨ 絕對私有大廳已啟動")
-        st.info(f"您的專屬金鑰：`{u_key}`\n\n(只有持有此金鑰的 Session 才能存取此數據)")
+        st.info(f"您的專屬金鑰：`{u_key}`\n\n(金鑰已記錄在網址中，刷新也不會遺失數據)")
     else:
         st.warning("🔗 共享模式：所有人輸入相同代碼即可共同記帳。")
 
@@ -176,7 +184,7 @@ title_text = "🔒 我的絕對私有空間" if is_lobby else "👥 旅程分帳
 st.markdown(f"""
     <div class="hero-banner">
         <h1 class="hero-title">{title_text}</h1>
-        <p style="opacity:0.6;">{ '數據已通過加密檔名隔離' if is_lobby else '房間代碼：' + st.session_state.trip_id }</p>
+        <p style="opacity:0.6;">{ '數據已通過 URL 持久化金鑰隔離' if is_lobby else '房間代碼：' + st.session_state.trip_id }</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -241,4 +249,4 @@ with st.expander("資料管理"):
         conn.commit()
         st.rerun()
 
-st.markdown(f"<div style='text-align:center; opacity:0.2; font-size:0.7em;'>FairShare v8.4 | Absolute Private Lobby Mode</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; opacity:0.2; font-size:0.7em;'>FairShare v8.5 | URL-Persistent Private Mode</div>", unsafe_allow_html=True)
