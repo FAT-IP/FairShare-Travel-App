@@ -13,71 +13,18 @@ def get_db_connection(trip_id):
     conn.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, payer TEXT, amount REAL, participants TEXT, description TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
     return conn
 
-# --- 2. 頁面配置與強烈對比 CSS ---
-st.set_page_config(page_title="FairShare | 幻魅紫", layout="wide")
+# --- 2. 頁面配置 ---
+st.set_page_config(page_title="FairShare | 自定義風格", layout="wide")
 
-st.markdown("""
-    <style>
-    .stApp {
-        background: linear-gradient(-45deg, #0f0c29, #302b63, #24243e, #4b0082);
-        background-size: 400% 400%;
-        animation: gradientBG 15s ease infinite;
-        color: white !important;
-    }
-    @keyframes gradientBG {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    .hero-banner {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(20px);
-        border: 2px solid rgba(218, 34, 255, 0.3);
-        padding: 40px;
-        border-radius: 35px;
-        text-align: center;
-        margin-bottom: 30px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    }
-    .hero-title {
-        font-size: 4.5em !important;
-        background: linear-gradient(to right, #da22ff, #9733ee);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 900;
-        margin-bottom: 0;
-    }
-
-    .neon-card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(218, 34, 255, 0.2);
-        border-radius: 20px;
-        padding: 20px;
-        margin-bottom: 15px;
-    }
-
-    .positive { color: #2ed573 !important; font-weight: bold; }
-    .negative { color: #ff4757 !important; font-weight: bold; }
-
-    .stButton>button {
-        background: linear-gradient(90deg, #da22ff, #9733ee) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 12px !important;
-        font-weight: bold !important;
-        width: 100%;
-        padding: 10px 0 !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- 3. 房間切換邏輯 ---
+# --- 3. 狀態初始化與顏色選擇 ---
 if 'trip_id' not in st.session_state:
     st.session_state.trip_id = "default"
 
 with st.sidebar:
     st.markdown("<h1 style='color:#da22ff; font-weight:900;'>幻魅中心</h1>", unsafe_allow_html=True)
+    
+    # 讓使用者自行選擇背景顏色
+    bg_color = st.color_picker("自定義背景顏色", "#1e1e2f")
     
     input_id = st.text_input("輸入旅程代碼", value=st.session_state.trip_id)
     
@@ -89,7 +36,59 @@ with st.sidebar:
             st.rerun()
 
     st.markdown("---")
-    
+
+# --- 4. 靜態 CSS 樣式 ---
+st.markdown(f"""
+    <style>
+    .stApp {{
+        background-color: {bg_color} !important;
+        color: white !important;
+    }}
+
+    .hero-banner {{
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(20px);
+        border: 2px solid rgba(218, 34, 255, 0.3);
+        padding: 40px;
+        border-radius: 35px;
+        text-align: center;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }}
+    .hero-title {{
+        font-size: 4.5em !important;
+        background: linear-gradient(to right, #da22ff, #9733ee);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 900;
+        margin-bottom: 0;
+    }}
+
+    .neon-card {{
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(218, 34, 255, 0.2);
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }}
+
+    .positive {{ color: #2ed573 !important; font-weight: bold; }}
+    .negative {{ color: #ff4757 !important; font-weight: bold; }}
+
+    .stButton>button {{
+        background: linear-gradient(90deg, #da22ff, #9733ee) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: bold !important;
+        width: 100%;
+        padding: 10px 0 !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- 5. 側邊欄資料處理 ---
+with st.sidebar:
     conn = get_db_connection(st.session_state.trip_id)
     
     st.markdown("### 成員名單")
@@ -114,7 +113,7 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
 
-# --- 4. 主畫面內容 ---
+# --- 6. 主畫面內容 ---
 st.markdown(f"""
     <div class="hero-banner">
         <h1 class="hero-title">FairShare</h1>
@@ -135,7 +134,7 @@ else:
             f_c1, f_c2 = st.columns(2)
             with f_c1:
                 payer = st.selectbox("誰付的錢？", members_df['name'].tolist())
-                desc = st.text_input("消費項目", placeholder="例如：東京鐵塔門票")
+                desc = st.text_input("消費項目", placeholder="例如：晚餐支出")
             with f_c2:
                 amount = st.number_input("總金額", min_value=0.0, step=10.0)
                 participants = st.multiselect("誰要平分？", members_df['name'].tolist(), default=members_df['name'].tolist())
@@ -203,4 +202,4 @@ else:
                 conn.commit()
                 st.rerun()
 
-st.markdown("<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v4.5 | PURPLE DATABASE EDITION</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v5.0 | CUSTOM STYLE EDITION</div>", unsafe_allow_html=True)
