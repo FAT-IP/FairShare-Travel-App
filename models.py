@@ -3,15 +3,16 @@ import os
 
 class FairShareModel:
     def __init__(self, trip_id="default"):
-        # 關鍵修改：根據 trip_id 建立獨立的儲存檔案
-        # 確保 A 房間的資料不會存到 B 房間
-        self.filename = f"data_{trip_id}.json"
+        # 1. 確保 trip_id 即使傳入 None 或空字串也能運作
+        self.trip_id = trip_id if trip_id and trip_id.strip() else "default"
+        # 2. 根據代碼產生獨立檔名
+        self.filename = f"data_{self.trip_id}.json"
         self.members = {}   
         self.history = []   
         self.load_data()
 
     def load_data(self):
-        """讀取該旅程專屬的資料檔"""
+        """讀取檔案，若不存在則初始化"""
         if os.path.exists(self.filename):
             try:
                 with open(self.filename, 'r', encoding='utf-8') as f:
@@ -19,18 +20,24 @@ class FairShareModel:
                     if isinstance(data, dict):
                         self.members = data.get("members", {})
                         self.history = data.get("history", [])
-            except:
+            except (json.JSONDecodeError, IOError):
                 self.members, self.history = {}, []
         else:
-            # 如果是新代碼，初始化空白資料
             self.members, self.history = {}, []
 
     def save_data(self):
-        """存檔至該旅程專屬檔案"""
-        with open(self.filename, 'w', encoding='utf-8') as f:
-            json.dump({"members": self.members, "history": self.history}, f, indent=4, ensure_ascii=False)
+        """儲存目前的狀態到 JSON"""
+        try:
+            with open(self.filename, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "members": self.members, 
+                    "history": self.history
+                }, f, indent=4, ensure_ascii=False)
+        except IOError as e:
+            print(f"儲存失敗: {e}")
 
     def add_member(self, name):
+        name = name.strip() if name else ""
         if name and name not in self.members:
             self.members[name] = 0.0
             self.save_data()
@@ -39,64 +46,77 @@ class FairShareModel:
 
     def remove_member(self, name):
         if name in self.members:
+            # 只有餘額為 0 才能移除，避免帳目對不起來
             if abs(self.members[name]) < 0.01:
                 del self.members[name]
                 self.save_data()
                 return True, f"已移除 {name}"
-            return False, "餘額不為 0，無法移除成員"
-        return False, "成員不存在"
+            return False, "餘額未結清，無法移除成員"
+        return False, "找不到成員"
 
     def record_transaction(self, payer, amount, participants, description):
-        if not participants: return False
+        if not participants or amount <= 0: return False
         
+        # 計算平分金額
         share = round(amount / len(participants), 2)
-        # 更新成員餘額
+        
+        # 更新餘額：付款人加上總額，參與者扣除平分額
         if payer in self.members:
             self.members[payer] += amount
         for p in participants:
             if p in self.members:
                 self.members[p] -= share
         
-        # 紀錄歷史
         self.history.append({
             "payer": payer,
             "amount": amount,
             "participants": participants,
-            "description": description
+            "description": description if description else "一般支出"
         })
         self.save_data()
         return True
 
     def delete_transaction_by_index(self, index):
-        """精確刪除邏輯，並回推餘額"""
+        """
+        修正 AttributeError 的關鍵：
+        撤銷和刪除特定項目都共用這個邏輯，並會自動回推餘額。
+        """
         if 0 <= index < len(self.history):
             target = self.history.pop(index)
-            payer, amount, participants = target['payer'], target['amount'], target['participants']
+            payer = target['payer']
+            amount = target['amount']
+            participants = target['participants']
+            
             share = round(amount / len(participants), 2)
             
-            if payer in self.members: self.members[payer] -= amount
+            # 逆向回推：付款人減去，參與者加回
+            if payer in self.members:
+                self.members[payer] -= amount
             for p in participants:
-                if p in self.members: self.members[p] += share
+                if p in self.members:
+                    self.members[p] += share
             
             self.save_data()
             return True
         return False
 
     def reset_all(self):
-        """重置該代碼下的所有資料"""
+        """刪除目前代碼對應的資料檔並重置記憶體"""
         self.members = {}
         self.history = []
         if os.path.exists(self.filename):
-            os.remove(self.filename)
+            try:
+                os.remove(self.filename)
+            except:
+                pass
         self.save_data()
 
     def calculate_settlement(self):
-        """計算誰該給誰多少錢"""
+        """結算建議：誰該給誰錢"""
         debtors = [[n, b] for n, b in self.members.items() if b < -0.01]
         creditors = [[n, b] for n, b in self.members.items() if b > 0.01]
         instructions = []
         
-        # 這裡使用簡單的貪婪算法進行結算
         while debtors and creditors:
             debtors.sort(key=lambda x: x[1])
             creditors.sort(key=lambda x: x[1], reverse=True)
@@ -111,3 +131,19 @@ class FairShareModel:
             if abs(creditors[0][1]) < 0.01: creditors.pop(0)
             
         return instructions
+```
+
+### 💡 搭配 `app.py` 的小撇步：
+為了防止 `image_596ada.png` 的 `AttributeError` 再次發生，請確保你的 `app.py` 初始化邏輯長這樣：
+
+```python
+# 在 app.py 中建議這樣寫：
+trip_code = st.sidebar.text_input("輸入旅程代碼", value="default")
+
+# 檢查 session_state 中是否有這些 key，沒有就先給初始值
+if 'current_trip' not in st.session_state:
+    st.session_state.current_trip = "default"
+
+if 'app' not in st.session_state or st.session_state.current_trip != trip_code:
+    st.session_state.app = FairShareModel(trip_id=trip_code)
+    st.session_state.current_trip = trip_code
