@@ -40,18 +40,16 @@ if 'first_load_done' not in st.session_state:
     st.session_state.first_load_done = True
 
 # --- 2. 多房間邏輯初始化 ---
-# 在側邊欄讓用戶輸入代碼
 with st.sidebar:
     st.title("房間系統")
-    trip_code = st.text_input("輸入旅程代碼", value="default", help="輸入相同的代碼即可與好友同步帳本，不同代碼的資料完全隔離。")
-    st.info(f"房間：{trip_code}")
+    trip_code = st.text_input("輸入旅程代碼 (建立獨立帳本)", value="default", help="輸入相同的代碼即可與好友同步帳本，不同代碼的資料完全隔離。")
+    st.info(f"目前位置：{trip_code}")
 
-# 如果切換了代碼，重新初始化 Model
 if 'current_trip' not in st.session_state or st.session_state.current_trip != trip_code:
     st.session_state.app = FairShareModel(trip_id=trip_code)
     st.session_state.current_trip = trip_code
 
-# --- 3. 強制文字顏色 CSS (解決圖片中字體看不見的問題) ---
+# --- 3. 強制文字顏色 CSS ---
 st.markdown("""
     <style>
     .info-card {
@@ -85,7 +83,7 @@ st.markdown("""
 # --- 4. 頂部橫幅 ---
 st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); padding: 30px; border-radius: 15px; color: white; text-align: center; margin-bottom: 25px;">
-        <h1 style="margin: 0; font-size: 2.8em;">FairShare </h1>
+        <h1 style="margin: 0; font-size: 2.8em;">FairShare</h1>
         <p style="font-size: 1.2em; opacity: 0.9;">旅程代碼：{trip_code}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -116,7 +114,7 @@ with st.sidebar:
         
         st.divider()
         to_remove = st.selectbox("選擇要移除的成員", members)
-        if st.button("🗑️ 移除此成員", use_container_width=True):
+        if st.button("移除此成員", use_container_width=True):
             success, msg = st.session_state.app.remove_member(to_remove)
             if success:
                 st.success(msg)
@@ -151,7 +149,7 @@ with col_left:
                     st.error("請確認金額與參與者。")
 
     st.divider()
-    st.markdown("### 📖 本次行程流水帳")
+    st.markdown("### 消費流水帳")
     history = st.session_state.app.history
     if not history:
         st.caption("目前尚無任何紀錄。")
@@ -159,7 +157,6 @@ with col_left:
         for item in reversed(history):
             st.markdown(f"""
             <div class="info-card">
-                <span style="float: right; font-size: 1.5em;"></span>
                 <h4>{item['description'] if item['description'] else '一般支出'}</h4>
                 <p><b>{item['payer']}</b> 支付了 <b>${item['amount']:,.2f}</b></p>
                 <small>分擔對象: {', '.join(item['participants'])}</small>
@@ -180,9 +177,9 @@ with col_right:
                 st.warning(a)
     
     st.divider()
-    st.markdown("### 🛠️ 數據管理")
+    st.markdown("### 數據管理")
     
-    if st.button("⏪ 撤銷最後一筆紀錄", use_container_width=True):
+    if st.button("撤銷最後一筆紀錄", use_container_width=True):
         if history:
             if st.session_state.app.delete_transaction_by_index(len(history) - 1):
                 st.toast("已撤銷上一筆紀錄")
@@ -205,4 +202,4 @@ with col_right:
             st.session_state.app.reset_all()
             st.rerun()
 
-st.markdown("<br><p style='text-align: center; color: #888;'>FairShare | 獨立帳本系統已啟動</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; color: #888;'>FairShare | 獨立帳本系統</p>", unsafe_allow_html=True)
