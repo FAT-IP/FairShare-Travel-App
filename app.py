@@ -43,7 +43,7 @@ if 'first_load_done' not in st.session_state:
 # 在側邊欄讓用戶輸入代碼
 with st.sidebar:
     st.title("房間系統")
-    trip_code = st.text_input("輸入旅程代碼 (建立獨立帳本)", value="default", help="輸入相同的代碼即可與好友同步帳本，不同代碼的資料完全隔離。")
+    trip_code = st.text_input("輸入旅程代碼", value="default", help="輸入相同的代碼即可與好友同步帳本，不同代碼的資料完全隔離。")
     st.info(f"房間：{trip_code}")
 
 # 如果切換了代碼，重新初始化 Model
@@ -85,7 +85,7 @@ st.markdown("""
 # --- 4. 頂部橫幅 ---
 st.markdown(f"""
     <div style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); padding: 30px; border-radius: 15px; color: white; text-align: center; margin-bottom: 25px;">
-        <h1 style="margin: 0; font-size: 2.8em;">FairShare ✈️</h1>
+        <h1 style="margin: 0; font-size: 2.8em;">FairShare </h1>
         <p style="font-size: 1.2em; opacity: 0.9;">旅程代碼：{trip_code}</p>
     </div>
     """, unsafe_allow_html=True)
@@ -93,9 +93,9 @@ st.markdown(f"""
 # --- 5. 側邊欄成員管理 ---
 with st.sidebar:
     st.divider()
-    st.header("👥 旅伴管理")
+    st.header("旅伴管理")
     new_name = st.text_input("輸入新旅伴姓名", key="sidebar_add_name")
-    if st.button("➕ 新增成員", use_container_width=True):
+    if st.button("新增成員", use_container_width=True):
         if st.session_state.app.add_member(new_name):
             st.toast(f"{new_name} 已加入！")
             st.rerun()
@@ -142,7 +142,7 @@ with col_left:
                 amount = st.number_input("總金額", min_value=0.0, step=10.0)
                 participants = st.multiselect("參與成員", members, default=members)
             
-            if st.form_submit_button("🚀 儲存紀錄", use_container_width=True):
+            if st.form_submit_button("儲存紀錄", use_container_width=True):
                 if participants and amount > 0:
                     st.session_state.app.record_transaction(payer, amount, participants, desc)
                     st.balloons()
@@ -159,7 +159,7 @@ with col_left:
         for item in reversed(history):
             st.markdown(f"""
             <div class="info-card">
-                <span style="float: right; font-size: 1.5em;">💰</span>
+                <span style="float: right; font-size: 1.5em;"></span>
                 <h4>{item['description'] if item['description'] else '一般支出'}</h4>
                 <p><b>{item['payer']}</b> 支付了 <b>${item['amount']:,.2f}</b></p>
                 <small>分擔對象: {', '.join(item['participants'])}</small>
@@ -170,11 +170,11 @@ with col_right:
     st.markdown("### 結算與管理")
     if lottie_money: st_lottie(lottie_money, height=150, key="money")
     
-    if st.button("✨ 生成結算建議", use_container_width=True, type="primary"):
+    if st.button("生成結算建議", use_container_width=True, type="primary"):
         advices = st.session_state.app.calculate_settlement()
         if not advices:
             st.snow()
-            st.success("🎉 目前帳目完全平衡！")
+            st.success("目前帳目完全平衡！")
         else:
             for a in advices:
                 st.warning(a)
@@ -195,12 +195,12 @@ with col_right:
         options = [f"{i+1}. {h['description']} ({h['payer']} 付 ${h['amount']})" for i, h in enumerate(history)]
         to_del = st.selectbox("刪除特定項目", options)
         selected_index = options.index(to_del)
-        if st.button("🔥 執行刪除", use_container_width=True):
+        if st.button("執行刪除", use_container_width=True):
             if st.session_state.app.delete_transaction_by_index(selected_index):
                 st.rerun()
     
     st.divider()
-    if st.button("🔴 重置此房間所有資料", use_container_width=True):
+    if st.button("重置此房間所有資料", use_container_width=True):
         if st.checkbox("我確定要清空這個房間的數據"):
             st.session_state.app.reset_all()
             st.rerun()
