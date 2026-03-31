@@ -18,10 +18,10 @@ st.set_page_config(page_title="FairShare | 專業風格版", layout="wide")
 
 # --- 3. 預設風格定義 ---
 THEMES = {
-    "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
-    "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
-    "沉穩森林綠": {"bg": "#064e3b", "text": "#ecfdf5", "accent": "#10b981"},
-    "極致簡約黑": {"bg": "#000000", "text": "#ffffff", "accent": "#ffffff"}
+    "紫色": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
+    "藍色": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
+    "綠色": {"bg": "#064e3b", "text": "#064e3b", "accent": "#10b981"},
+    "黑色": {"bg": "#000000", "text": "#ffffff", "accent": "#ffffff"}
 }
 
 # --- 4. 狀態初始化 ---
