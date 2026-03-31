@@ -7,7 +7,7 @@ import time
 def get_db_connection(trip_id):
     """根據旅程代碼建立/連接獨立的資料庫檔案"""
     # 確保 trip_id 不為空
-    safe_id = trip_id.strip() if trip_id.strip() else "default"
+    safe_id = trip_id.strip() if trip_id.strip() else ""
     db_name = f"trip_data_{safe_id}.db"
     conn = sqlite3.connect(db_name, check_same_thread=False)
     conn.execute('CREATE TABLE IF NOT EXISTS members (name TEXT PRIMARY KEY, balance REAL)')
