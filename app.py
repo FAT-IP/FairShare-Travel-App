@@ -58,7 +58,7 @@ if 'first_load_done' not in st.session_state:
 # --- 2. 多房間邏輯初始化 ---
 with st.sidebar:
     st.title("🏠 房間系統")
-    trip_code = st.text_input("輸入旅程代碼 (例如：Japan123)", value="Enter a Name")
+    trip_code = st.text_input("輸入旅程代碼 (例如：Japan123)", value="")
     
     if 'app' not in st.session_state or st.session_state.get('current_trip') != trip_code:
         st.session_state.app = FairShareModel(trip_id=trip_code)
