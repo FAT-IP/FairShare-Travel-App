@@ -14,18 +14,26 @@ def get_db_connection(trip_id):
     return conn
 
 # --- 2. 頁面配置 ---
-st.set_page_config(page_title="FairShare | 全自定義風格", layout="wide")
+st.set_page_config(page_title="FairShare | 專業風格版", layout="wide")
 
-# --- 3. 狀態初始化與顏色選擇 ---
+# --- 3. 預設風格定義 ---
+THEMES = {
+    "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
+    "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
+    "沉穩森林綠": {"bg": "#064e3b", "text": "#ecfdf5", "accent": "#10b981"},
+    "極致簡約黑": {"bg": "#000000", "text": "#ffffff", "accent": "#ffffff"}
+}
+
+# --- 4. 狀態初始化 ---
 if 'trip_id' not in st.session_state:
     st.session_state.trip_id = "default"
 
 with st.sidebar:
-    st.markdown("<h1 style='color:#da22ff; font-weight:900;'>風格設定</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color:#da22ff; font-weight:900;'>風格中心</h1>", unsafe_allow_html=True)
     
-    # 讓使用者自行選擇背景與字體顏色
-    bg_color = st.color_picker("自定義背景顏色", "#1e1e2f")
-    text_color = st.color_picker("自定義字體顏色", "#ffffff")
+    # 改為下拉式選單選擇預設風格，不再使用自由選擇器
+    theme_choice = st.selectbox("切換視覺風格", list(THEMES.keys()))
+    current_theme = THEMES[theme_choice]
     
     st.markdown("---")
     input_id = st.text_input("輸入旅程代碼", value=st.session_state.trip_id)
@@ -33,39 +41,37 @@ with st.sidebar:
     if st.button("進入/切換房間"):
         if input_id:
             st.session_state.trip_id = input_id
-            st.success(f"正在前往房間: {input_id}")
+            st.success(f"已切換至: {input_id}")
             time.sleep(0.5)
             st.rerun()
 
     st.markdown("---")
 
-# --- 4. 靜態 CSS 樣式 ---
+# --- 5. 靜態 CSS 樣式 ---
 st.markdown(f"""
     <style>
-    /* 全域字體顏色與背景 */
     .stApp {{
-        background-color: {bg_color} !important;
-        color: {text_color} !important;
+        background-color: {current_theme['bg']} !important;
+        color: {current_theme['text']} !important;
     }}
     
-    /* 修正 Streamlit 原生標籤顏色 */
     .stApp p, .stApp span, .stApp label, .stApp h1, .stApp h2, .stApp h3 {{
-        color: {text_color} !important;
+        color: {current_theme['text']} !important;
     }}
 
     .hero-banner {{
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(20px);
-        border: 2px solid rgba(218, 34, 255, 0.3);
+        border: 2px solid {current_theme['accent']};
+        opacity: 0.8;
         padding: 40px;
         border-radius: 35px;
         text-align: center;
         margin-bottom: 30px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }}
     .hero-title {{
         font-size: 4.5em !important;
-        background: linear-gradient(to right, #da22ff, #9733ee);
+        background: linear-gradient(to right, {current_theme['accent']}, #9733ee);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 900;
@@ -74,7 +80,7 @@ st.markdown(f"""
 
     .neon-card {{
         background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(218, 34, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 20px;
         padding: 20px;
         margin-bottom: 15px;
@@ -84,23 +90,17 @@ st.markdown(f"""
     .negative {{ color: #ff4757 !important; font-weight: bold; }}
 
     .stButton>button {{
-        background: linear-gradient(90deg, #da22ff, #9733ee) !important;
-        color: white !important;
+        background: {current_theme['accent']} !important;
+        color: {'#000000' if current_theme['accent'] == '#ffffff' else '#ffffff'} !important;
         border: none !important;
         border-radius: 12px !important;
         font-weight: bold !important;
         width: 100%;
-        padding: 10px 0 !important;
-    }}
-    
-    /* 修正 Form 與 Selectbox 的對比 */
-    .stSelectbox div[data-baseweb="select"] {{
-        background-color: rgba(255, 255, 255, 0.1) !important;
     }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 5. 側邊欄資料處理 ---
+# --- 6. 側邊欄資料處理 ---
 with st.sidebar:
     conn = get_db_connection(st.session_state.trip_id)
     
@@ -121,17 +121,17 @@ with st.sidebar:
         cls = "positive" if row['balance'] >= 0 else "negative"
         st.markdown(f"""
             <div class="neon-card">
-                <div style="font-size:0.8em; opacity:0.6; color:{text_color};">{row['name']}</div>
+                <div style="font-size:0.8em; opacity:0.6;">{row['name']}</div>
                 <div class="{cls}" style="font-size:1.4em;">${row['balance']:,.2f}</div>
             </div>
         """, unsafe_allow_html=True)
 
-# --- 6. 主畫面內容 ---
+# --- 7. 主畫面內容 ---
 st.markdown(f"""
     <div class="hero-banner">
         <h1 class="hero-title">FairShare</h1>
-        <p style="color:{text_color}; opacity:0.7; font-size:1.2em;">
-            當前房間：<span style="color:#da22ff; font-weight:bold; font-size:1.5em;">{st.session_state.trip_id}</span>
+        <p style="opacity:0.7; font-size:1.2em;">
+            當前房間：<span style="color:{current_theme['accent']}; font-weight:bold; font-size:1.5em;">{st.session_state.trip_id}</span>
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -142,7 +142,7 @@ else:
     col1, col2 = st.columns([3, 2], gap="large")
 
     with col1:
-        st.markdown(f"<h2 style='color:#da22ff;'>紀錄支出</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='color:{current_theme['accent']};'>紀錄支出</h2>", unsafe_allow_html=True)
         with st.form("expense_form", clear_on_submit=True):
             f_c1, f_c2 = st.columns(2)
             with f_c1:
@@ -165,26 +165,26 @@ else:
                     time.sleep(0.5)
                     st.rerun()
 
-        st.markdown(f"<h2 style='color:#da22ff; margin-top:30px;'>消費紀錄流</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='color:{current_theme['accent']}; margin-top:30px;'>消費紀錄流</h2>", unsafe_allow_html=True)
         history_df = pd.read_sql('SELECT * FROM history ORDER BY id DESC', conn)
         if history_df.empty:
-            st.markdown(f"<p style='opacity:0.4; color:{text_color};'>尚無交易紀錄...</p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='opacity:0.4;'>尚無交易紀錄...</p>", unsafe_allow_html=True)
         else:
             for _, row in history_df.iterrows():
                 st.markdown(f"""
-                    <div class="neon-card" style="border-left: 4px solid #da22ff;">
+                    <div class="neon-card" style="border-left: 4px solid {current_theme['accent']};">
                         <div style="display:flex; justify-content:space-between;">
-                            <span style="font-weight:bold; color:#da22ff; font-size:1.2em;">{row['description']}</span>
-                            <span style="font-family:monospace; font-weight:900; color:{text_color};">${row['amount']:,.2f}</span>
+                            <span style="font-weight:bold; color:{current_theme['accent']}; font-size:1.2em;">{row['description']}</span>
+                            <span style="font-family:monospace; font-weight:900;">${row['amount']:,.2f}</span>
                         </div>
-                        <div style="font-size:0.85em; opacity:0.7; margin-top:10px; color:{text_color};">
+                        <div style="font-size:0.85em; opacity:0.7; margin-top:10px;">
                             由 {row['payer']} 支付，分擔對象：{row['participants']}
                         </div>
                     </div>
                 """, unsafe_allow_html=True)
 
     with col2:
-        st.markdown(f"<h2 style='color:#da22ff;'>智能結算建議</h2>", unsafe_allow_html=True)
+        st.markdown(f"<h2 style='color:{current_theme['accent']};'>智能結算建議</h2>", unsafe_allow_html=True)
         if st.button("執行運算"):
             bal_dict = members_df.set_index('name')['balance'].to_dict()
             debtors = {k: v for k, v in bal_dict.items() if v < -0.01}
@@ -199,9 +199,9 @@ else:
                         pay = min(abs(d_amt), c_amt)
                         if pay > 0:
                             st.markdown(f"""
-                                <div style="padding:15px; background:rgba(218,34,255,0.15); border:1px solid #da22ff; border-radius:12px; margin-bottom:8px; color:{text_color};">
+                                <div style="padding:15px; background:rgba(255,255,255,0.05); border:1px solid {current_theme['accent']}; border-radius:12px; margin-bottom:8px;">
                                     {d_name} 應支付給 {c_name}<br>
-                                    <span style="font-size:1.3em; font-weight:bold; color:#da22ff;">${pay:,.2f}</span>
+                                    <span style="font-size:1.3em; font-weight:bold; color:{current_theme['accent']};">${pay:,.2f}</span>
                                 </div>
                             """, unsafe_allow_html=True)
                             d_amt += pay
@@ -215,4 +215,4 @@ else:
                 conn.commit()
                 st.rerun()
 
-st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em; color:{text_color};'>FAIRSHARE PRO v5.5 | FULL CUSTOM EDITION</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.0 | CURATED THEMES</div>", unsafe_allow_html=True)
