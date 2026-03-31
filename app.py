@@ -80,7 +80,7 @@ st.markdown("""
 
 # --- 3. 房間切換邏輯 (解決 Enter 沒反應問題) ---
 if 'trip_id' not in st.session_state:
-    st.session_state.trip_id = "default"
+    st.session_state.trip_id = ""
 
 with st.sidebar:
     st.markdown("<h1 style='color:#da22ff; font-weight:900;'>🔮 幻魅中心</h1>", unsafe_allow_html=True)
