@@ -49,66 +49,90 @@ if 'current_trip' not in st.session_state or st.session_state.current_trip != tr
     st.session_state.app = FairShareModel(trip_id=trip_code)
     st.session_state.current_trip = trip_code
 
-# --- 3. 進階 UI 與修正對比度 CSS ---
+# --- 3. 進階 UI 與色彩美化 CSS ---
 st.markdown("""
     <style>
-    /* 全域背景設定 */
+    /* 全域背景：使用更有質感的淡紫色與淺藍過渡 */
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
         background-attachment: fixed;
     }
 
-    /* 修正後的玻璃擬態卡片：加強背景不透明度並修正文字顏色 */
+    /* 頂部橫幅美化：使用更有層次感的複合漸層 */
+    .main-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 50px 20px;
+        border-radius: 25px;
+        color: white;
+        text-align: center;
+        margin-bottom: 35px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        position: relative;
+        overflow: hidden;
+    }
+    .main-banner::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        transform: rotate(30deg);
+    }
+
+    /* 玻璃擬態卡片加強 */
     .info-card {
-        background: rgba(255, 255, 255, 0.9) !important; /* 提高不透明度 */
-        backdrop-filter: blur(10px);
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-        margin-bottom: 15px;
-        border-left: 6px solid #1E88E5;
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.92) !important;
+        backdrop-filter: blur(15px);
+        padding: 25px;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
+        border-left: 8px solid #764ba2;
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
     
-    /* 強制所有卡片內文字為深色 */
-    .info-card h4 { color: #1565C0 !important; margin: 0 0 10px 0 !important; font-weight: 700; }
-    .info-card p, .info-card b, .info-card span, .info-card small { color: #2C3E50 !important; }
+    .info-card h4 { color: #4A00E0 !important; margin: 0 0 12px 0 !important; font-weight: 800; font-size: 1.3em; }
+    .info-card p, .info-card b, .info-card span, .info-card small { color: #2D3436 !important; }
 
     .balance-card {
-        padding: 15px; 
-        border-radius: 12px; 
-        background: rgba(255, 255, 255, 0.95) !important; 
-        margin-bottom: 12px;
-        border-left: 5px solid #ccc;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        transition: transform 0.2s ease;
+        padding: 18px; 
+        border-radius: 15px; 
+        background: rgba(255, 255, 255, 0.98) !important; 
+        margin-bottom: 15px;
+        border-left: 6px solid #ccc;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    .balance-card:hover { transform: scale(1.02); }
-    .balance-name { color: #2C3E50 !important; font-weight: 700; font-size: 1.1em; display: block; }
+    .balance-card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.1); }
+    .balance-name { color: #2D3436 !important; font-weight: 700; font-size: 1.15em; display: block; margin-bottom: 5px; }
     
-    /* 修正流水帳中的空紀錄文字顏色 */
-    .stMarkdown p { color: #2C3E50 !important; }
-    .stCaption { color: #5D6D7E !important; }
-
-    /* 按鈕樣式 */
+    /* 按鈕樣式美化 */
     .stButton>button {
-        border-radius: 12px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        border: none;
-        box-shadow: 0 4px 10px rgba(30, 136, 229, 0.2);
+        border-radius: 15px;
+        font-weight: 800;
+        padding: 0.6rem 1.5rem;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%) !important;
+        color: white !important;
+        border: none !important;
+        box-shadow: 0 5px 15px rgba(118, 75, 162, 0.3);
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 8px 25px rgba(118, 75, 162, 0.4);
     }
     
-    h3 { color: #1565C0 !important; font-weight: 800 !important; }
+    h3 { color: #4A00E0 !important; font-weight: 900 !important; border-bottom: 2px solid #764ba2; display: inline-block; padding-bottom: 5px; margin-bottom: 20px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 4. 頂部橫幅 ---
+# --- 4. 頂部橫幅 (套用新設計) ---
 st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%); padding: 40px; border-radius: 20px; color: white; text-align: center; margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
-        <h1 style="margin: 0; font-size: 3em; font-weight: 900; letter-spacing: 2px;">✈️ FairShare</h1>
-        <p style="font-size: 1.2em; opacity: 0.9; margin-top: 10px;">旅程代碼：<span style="background: rgba(255,255,255,0.2); padding: 2px 10px; border-radius: 5px;">{trip_code}</span></p>
+    <div class="main-banner">
+        <h1 style="margin: 0; font-size: 3.5em; font-weight: 900; letter-spacing: 3px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">✈️ FairShare</h1>
+        <p style="font-size: 1.3em; opacity: 0.95; margin-top: 15px; font-weight: 500;">旅程代碼：<span style="background: rgba(255,255,255,0.25); padding: 4px 15px; border-radius: 10px; font-family: monospace; font-weight: bold;">{trip_code}</span></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -132,7 +156,7 @@ with st.sidebar:
             st.markdown(f"""
                 <div class="balance-card" style="border-left-color: {color};">
                     <span class="balance-name">{m}</span>
-                    <span style="color: {color}; font-weight: bold; font-size: 1.2em;">${bal:,.2f}</span>
+                    <span style="color: {color}; font-weight: 800; font-size: 1.3em;">${bal:,.2f}</span>
                 </div>
             """, unsafe_allow_html=True)
         
@@ -176,7 +200,7 @@ with col_left:
     st.markdown("### 消費流水帳")
     history = st.session_state.app.history
     if not history:
-        st.markdown("<p style='color: #5D6D7E;'>目前尚無任何紀錄。</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #2D3436; font-style: italic;'>目前尚無任何紀錄。</p>", unsafe_allow_html=True)
     else:
         for item in reversed(history):
             st.markdown(f"""
@@ -226,4 +250,4 @@ with col_right:
             st.session_state.app.reset_all()
             st.rerun()
 
-st.markdown("<br><p style='text-align: center; color: #2C3E50; font-weight: 600;'>FairShare | 獨立帳本系統</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align: center; color: #4A00E0; font-weight: 800; letter-spacing: 1px;'>FairShare | 讓每一趟旅程更公平</p>", unsafe_allow_html=True)
