@@ -43,6 +43,12 @@ if 'first_load_done' not in st.session_state:
 if 'app' not in st.session_state:
     st.session_state.app = FairShareModel()
 
+trip_code = st.sidebar.text_input("輸入旅程代碼 (例如: SEOUL2026)", value="default")
+
+if 'app' not in st.session_state or st.session_state.current_trip != trip_code:
+    st.session_state.app = FairShareModel(trip_id=trip_code)
+    st.session_state.current_trip = trip_code
+
 # --- 3. 強制文字顏色 CSS (解決圖片中字體看不見的問題) ---
 st.markdown("""
     <style>
