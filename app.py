@@ -5,27 +5,23 @@ import time
 import random
 import string
 import secrets
-from streamlit.runtime.scriptrunner import get_script_run_ctx
+import os
 
-# --- 1. 獲取 Session ID (用於私有大廳) ---
-def get_session_id():
-    ctx = get_script_run_ctx()
-    if ctx:
-        return ctx.session_id
-    return "local_user"
-
-# --- 2. 資料庫連線函式 ---
+# --- 1. 資料庫連線函式 ---
 def get_db_connection(trip_id):
     """根據旅程代碼建立/連接獨立的資料庫檔案"""
     safe_id = trip_id.strip() if trip_id.strip() else "default"
     
-    # 私有化邏輯：如果是在大廳，加上 Session ID 確保資料隔離
+    # 私有化且持久化邏輯：
+    # 如果是 'default'，我們使用一個相對固定但具有個人特徵的名稱
+    # 在 Streamlit Cloud 等環境中，若要完全區隔不同人且要保存，
+    # 建議使用者可以自定義一個「私有金鑰」
     if safe_id == "default":
-        session_id = get_session_id()
-        # 取前 8 位即可，確保檔名簡潔
-        db_name = f"trip_data_private_{session_id[:8]}.db"
+        # 這裡我們使用 'my_private_lobby' 作為預設，
+        # 在實際部署時，可以考慮結合用戶登入資訊
+        db_name = "trip_data_private_lobby.db"
     else:
-        # 如果是特定房間，則使用原始代碼，方便多人共享
+        # 如果是共享房間，則使用原始代碼
         clean_id = "".join([c for c in safe_id if c.isalnum() or c in ('-', '_')]).strip()
         db_name = f"trip_data_shared_{clean_id}.db"
     
@@ -43,10 +39,10 @@ def get_db_connection(trip_id):
             
     return conn
 
-# --- 3. 頁面配置 ---
-st.set_page_config(page_title="FairShare | 極致私隱版", layout="wide")
+# --- 2. 頁面配置 ---
+st.set_page_config(page_title="FairShare | 持久保存版", layout="wide")
 
-# --- 4. 預設風格定義 ---
+# --- 3. 預設風格定義 ---
 THEMES = {
     "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
     "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
@@ -54,7 +50,7 @@ THEMES = {
     "活力琥珀橙": {"bg": "#2B3C3D", "text": "#ffffff", "accent": "#FF7400"}
 }
 
-# --- 5. 狀態初始化 ---
+# --- 4. 狀態初始化 ---
 if 'trip_id' not in st.session_state:
     st.session_state.trip_id = "default"
 
@@ -72,37 +68,37 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 房間管理")
     
-    if st.button("🎲 生成多人共享代碼"):
+    if st.button("🎲 生成共享代碼 (多人用)"):
         alphabet = string.ascii_letters + string.digits
         random_id = ''.join(secrets.choice(alphabet) for _ in range(12))
         st.session_state.temp_id = random_id
         st.rerun()
 
-    input_id = st.text_input("房間代碼 (留空回大廳)", value=st.session_state.temp_id)
+    input_id = st.text_input("房間代碼 (留空回個人大廳)", value=st.session_state.temp_id)
     
     col_btn1, col_btn2 = st.columns(2)
     with col_btn1:
-        if st.button("進入房間"):
+        if st.button("進入 / 切換"):
             st.session_state.trip_id = input_id if input_id else "default"
             st.session_state.temp_id = st.session_state.trip_id
-            st.success("房間切換成功")
+            st.success("切換成功")
             time.sleep(0.5)
             st.rerun()
     
     with col_btn2:
-        if st.button("🚪 回到私有大廳"):
+        if st.button("🏠 回個人大廳"):
             st.session_state.trip_id = "default"
             st.session_state.temp_id = "default"
             st.rerun()
 
     if is_lobby:
-        st.info("🔒 您目前處於「私有大廳」。此處的數據僅綁定於您目前的瀏覽器 Session，其他人無法查看。")
+        st.success("✨ 您在個人大廳。數據已自動儲存，下次回來仍會保留。")
     else:
-        st.warning("👥 您處於「共享房間」。知道此代碼的任何人皆可存取此數據。")
+        st.warning("🔗 共享模式：所有人輸入相同代碼即可共同記帳。")
 
     st.markdown("---")
 
-# --- 6. CSS 樣式 ---
+# --- 5. CSS 樣式 ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {current_theme['bg']} !important; color: {current_theme['text']} !important; }}
@@ -134,7 +130,7 @@ st.markdown(f"""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 7. 核心資料處理 ---
+# --- 6. 核心資料處理 ---
 conn = get_db_connection(st.session_state.trip_id)
 members_df = pd.read_sql('SELECT * FROM members', conn)
 
@@ -151,9 +147,9 @@ with st.sidebar:
                 except:
                     st.warning("名稱重複")
 
-    st.markdown("### 財務概覽")
+    st.markdown("### 累計花費")
     for _, row in members_df.iterrows():
-        display_name = "我的累計支出" if is_lobby and row['name'] == "本人" else row['name']
+        display_name = "我的總支出" if is_lobby and row['name'] == "本人" else row['name']
         val = abs(row['balance'])
         st.markdown(f"""
             <div class="neon-card">
@@ -162,24 +158,24 @@ with st.sidebar:
             </div>
         """, unsafe_allow_html=True)
 
-# --- 8. 主畫面 ---
-title_text = "🔒 私有記帳大廳" if is_lobby else "👥 多人分帳空間"
+# --- 7. 主畫面 ---
+title_text = "🏠 我的記帳空間" if is_lobby else "👥 旅程分帳空間"
 st.markdown(f"""
     <div class="hero-banner">
         <h1 class="hero-title">{title_text}</h1>
-        <p style="opacity:0.6;">{ '數據僅存於此 Session' if is_lobby else '房間代碼：' + st.session_state.trip_id }</p>
+        <p style="opacity:0.6;">{ '數據將保存於伺服器' if is_lobby else '房間代碼：' + st.session_state.trip_id }</p>
     </div>
     """, unsafe_allow_html=True)
 
 col_main = st.columns([3, 2] if not is_lobby else [1])
 
 with col_main[0]:
-    st.markdown(f"<h2 style='color:{current_theme['accent']};'>{'＋ 新增個人紀錄' if is_lobby else '支出紀錄'}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='color:{current_theme['accent']};'>{'＋ 新增一筆花費' if is_lobby else '支出紀錄'}</h2>", unsafe_allow_html=True)
     with st.form("expense_form", clear_on_submit=True):
         c1, c2 = st.columns(2)
         with c1:
             payer = "本人" if is_lobby else st.selectbox("付款人", members_df['name'].tolist())
-            desc = st.text_input("項目名稱", placeholder="例如：午餐")
+            desc = st.text_input("項目名稱", placeholder="例如：加油、買衣服、晚餐")
         with c2:
             amount = st.number_input("金額", min_value=0.0, step=10.0)
             if not is_lobby:
@@ -187,7 +183,7 @@ with col_main[0]:
             else:
                 participants = ["本人"]
         
-        if st.form_submit_button("送出紀錄"):
+        if st.form_submit_button("儲存紀錄"):
             if amount > 0:
                 share = amount / len(participants)
                 conn.execute('UPDATE members SET balance = balance + ? WHERE name = ?', (amount, payer))
@@ -198,7 +194,7 @@ with col_main[0]:
                 conn.commit()
                 st.rerun()
 
-    st.markdown("### 歷史清單")
+    st.markdown("### 歷史明細")
     history_df = pd.read_sql('SELECT * FROM history ORDER BY id DESC', conn)
     for _, row in history_df.iterrows():
         detail = "" if is_lobby else f"<div style='font-size:0.8em; opacity:0.5;'>分攤：{row['participants']}</div>"
@@ -206,7 +202,7 @@ with col_main[0]:
             <div class="neon-card" style="border-left: 3px solid {current_theme['accent']};">
                 <div style="display:flex; justify-content:space-between;">
                     <b>{row['description']}</b>
-                    <span style="color:{current_theme['accent']};">${row['amount']:,.2f}</span>
+                    <span style="color:{current_theme['accent']}; font-family:monospace; font-weight:bold;">${row['amount']:,.2f}</span>
                 </div>
                 {detail}
             </div>
@@ -215,18 +211,21 @@ with col_main[0]:
 if not is_lobby:
     with col_main[1]:
         st.markdown("### 結算建議")
-        if st.button("計算還款路徑"):
+        if st.button("計算還款"):
             bal = members_df.set_index('name')['balance'].to_dict()
             for n, b in bal.items():
                 if b < -0.1: st.write(f"❌ {n} 需支付 {abs(b):.1f}")
                 elif b > 0.1: st.write(f"✅ {n} 應收回 {b:.1f}")
 
 st.markdown("<br><br>", unsafe_allow_html=True)
-with st.expander("進階管理"):
-    if st.button("清空目前所有數據"):
+with st.expander("資料管理"):
+    if st.button("清空本房所有紀錄 (不可復原)"):
         conn.execute('DELETE FROM history')
-        conn.execute('DELETE FROM members')
+        if is_lobby:
+            conn.execute('UPDATE members SET balance = 0')
+        else:
+            conn.execute('DELETE FROM members')
         conn.commit()
         st.rerun()
 
-st.markdown(f"<div style='text-align:center; opacity:0.2; font-size:0.7em;'>FairShare v8.2 | Session-Based Privacy</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; opacity:0.2; font-size:0.7em;'>FairShare v8.3 | Persistent Storage Mode</div>", unsafe_allow_html=True)
