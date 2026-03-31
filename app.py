@@ -57,7 +57,7 @@ if 'current_trip' not in st.session_state:
     st.session_state.current_trip = "default"
 
 with st.sidebar:
-    st.markdown("""<h2 style='text-align: center; color: #311B92; font-weight: 900;'>🏠 房間系統</h2>""", unsafe_allow_html=True)
+    st.markdown("""<h2 style='text-align: center; color: #1A237E; font-weight: 900;'>🏠 房間系統</h2>""", unsafe_allow_html=True)
     trip_code = st.text_input("輸入旅程代碼", value=st.session_state.current_trip)
     
     if 'app' not in st.session_state or st.session_state.current_trip != trip_code:
@@ -66,120 +66,112 @@ with st.sidebar:
     
     st.info(f"📍 目前房間：{trip_code}")
 
-# --- 3. 核心 CSS 樣式優化 (升級側邊欄與背景) ---
+# --- 3. 核心 CSS 樣式優化 (解決模糊問題，提升清晰度) ---
 st.markdown("""
     <style>
-    /* 升級版全域背景：多層流體漸變 */
+    /* 全域背景：改為明亮的線性漸變，減少徑向漸變帶來的模糊感 */
     .stApp {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        background-image: 
-            radial-gradient(at 0% 0%, rgba(224, 195, 252, 0.5) 0px, transparent 50%),
-            radial-gradient(at 100% 0%, rgba(142, 197, 252, 0.5) 0px, transparent 50%),
-            radial-gradient(at 100% 100%, rgba(255, 230, 250, 0.5) 0px, transparent 50%),
-            radial-gradient(at 0% 100%, rgba(200, 240, 255, 0.5) 0px, transparent 50%);
+        background: linear-gradient(120deg, #e0c3fc 0%, #8ec5fc 100%);
         background-attachment: fixed;
     }
 
-    /* 側邊欄升級：深度玻璃擬態 */
+    /* 側邊欄：大幅降低模糊數值 (從 25px 降到 8px)，增加白色的純度 */
     [data-testid="stSidebar"] {
-        background: rgba(255, 255, 255, 0.3) !important;
-        backdrop-filter: blur(25px) saturate(180%) !important;
-        -webkit-backdrop-filter: blur(25px) saturate(180%) !important;
-        border-right: 1px solid rgba(255, 255, 255, 0.4) !important;
-        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.05);
+        background: rgba(255, 255, 255, 0.6) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.8) !important;
+        box-shadow: 5px 0 15px rgba(0, 0, 0, 0.05);
     }
 
-    /* 頂部橫幅：更高級的內發光 */
+    /* 頂部橫幅：色彩加深，增加清晰度 */
     .main-banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 50px 20px;
-        border-radius: 35px;
+        background: linear-gradient(135deg, #5C6BC0 0%, #3949AB 100%);
+        padding: 60px 20px;
+        border-radius: 30px;
         color: white !important;
         text-align: center;
         margin-bottom: 40px;
-        box-shadow: 0 25px 50px rgba(118, 75, 162, 0.2), inset 0 -5px 15px rgba(0,0,0,0.1);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* 資訊卡片：柔和光影 */
+    /* 資訊卡片：提高透明度(從 0.85 升至 0.95)，降低模糊感 */
     .info-card {
-        background: rgba(255, 255, 255, 0.85) !important;
-        padding: 28px;
-        border-radius: 28px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        background: rgba(255, 255, 255, 0.95) !important;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
         margin-bottom: 25px;
-        border: 1px solid rgba(255,255,255,0.6);
-        border-left: 12px solid #764ba2;
-        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        border: 1px solid #E0E0E0;
+        border-left: 8px solid #5C6BC0;
+        transition: transform 0.2s ease;
     }
     .info-card:hover {
-        transform: translateY(-10px);
-        background: rgba(255, 255, 255, 1) !important;
-        box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
     }
 
-    /* 側邊欄內的餘額卡片 */
+    /* 側邊欄內的餘額卡片：移除模糊，改用高對比白 */
     .balance-card {
-        background: rgba(255, 255, 255, 0.6) !important;
-        padding: 18px;
-        border-radius: 20px;
-        margin-bottom: 15px;
-        border: 1px solid rgba(255,255,255,0.8);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-        transition: all 0.3s ease;
-    }
-    .balance-card:hover {
-        background: rgba(255, 255, 255, 0.9) !important;
-        transform: scale(1.02);
+        background: #FFFFFF !important;
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 12px;
+        border: 1px solid #EEEEEE;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.03);
     }
 
-    /* 按鈕設計：層次感強化 */
+    /* 按鈕設計：加深對比，提升點擊感 */
     .stButton>button {
         width: 100%;
-        border-radius: 18px !important;
-        font-weight: 900 !important;
-        background: linear-gradient(145deg, #7e57c2, #673ab7) !important;
+        border-radius: 12px !important;
+        font-weight: 800 !important;
+        background: #3F51B5 !important;
         color: white !important;
         border: none !important;
-        box-shadow: 0 8px 25px rgba(103, 58, 183, 0.3), 
-                    inset 0 4px 6px rgba(255,255,255,0.2) !important;
-        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        box-shadow: 0 4px 12px rgba(63, 81, 181, 0.3) !important;
+        height: 3em;
     }
     .stButton>button:hover {
-        background: linear-gradient(145deg, #9575cd, #7e57c2) !important;
-        box-shadow: 0 15px 30px rgba(103, 58, 183, 0.4), 
-                    inset 0 4px 6px rgba(255,255,255,0.3) !important;
-        transform: translateY(-4px) !important;
+        background: #303F9F !important;
+        box-shadow: 0 6px 15px rgba(63, 81, 181, 0.4) !important;
     }
 
-    /* 頁面標題樣式 */
+    /* 頁面標題：加強色彩深度 */
     h3 { 
-        color: #311B92 !important; 
+        color: #1A237E !important; 
         font-weight: 900 !important; 
-        border-bottom: 4px solid #764ba2;
-        display: inline-block;
-        padding-bottom: 5px;
-        margin-top: 30px !important;
-        margin-bottom: 20px !important;
+        border-bottom: 3px solid #5C6BC0;
+        margin-top: 25px !important;
+        margin-bottom: 15px !important;
     }
     
-    label p { color: #2D3436 !important; font-weight: 800 !important; }
+    /* 讓 Input 框更清晰 */
+    .stTextInput input, .stNumberInput input {
+        border-radius: 10px !important;
+        border: 1px solid #D1D1D1 !important;
+        background-color: white !important;
+    }
+
+    label p { color: #1A237E !important; font-weight: 700 !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # --- 4. 畫面呈現 ---
 st.markdown(f"""
     <div class="main-banner">
-        <h1 style="margin:0; font-size: 3.8em; letter-spacing: 3px;">✈️ FairShare</h1>
-        <p style="font-size:1.4em; font-weight:700; opacity: 0.9; margin-top:10px;">優雅分帳，讓旅行更純粹</p>
+        <h1 style="margin:0; font-size: 4em; letter-spacing: 2px; font-weight: 900; text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">FairShare</h1>
+        <p style="font-size:1.3em; font-weight:600; opacity: 0.95; margin-top:10px;">優雅分帳，讓旅行更純粹</p>
     </div>
     """, unsafe_allow_html=True)
 
 # 側邊欄內容
 with st.sidebar:
-    st.markdown("<hr style='margin: 1em 0; border-color: rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     st.header("👥 旅伴管理")
-    new_name = st.text_input("新增成員姓名", placeholder="輸入姓名並按 Enter")
-    if st.button("➕ 確認加入", use_container_width=True):
+    new_name = st.text_input("新增成員姓名", placeholder="例如：阿強、小美")
+    if st.button("➕ 確認加入成員", use_container_width=True):
         if new_name:
             st.session_state.app.add_member(new_name)
             st.rerun()
@@ -190,11 +182,11 @@ with st.sidebar:
         st.subheader("💰 實時餘額")
         for m in members:
             bal = st.session_state.app.members[m]
-            color = "#1B5E20" if bal >= 0 else "#D32F2F"
+            color = "#2E7D32" if bal >= 0 else "#C62828"
             st.markdown(f"""
-                <div class="balance-card" style="border-left: 8px solid {color};">
-                    <div style="font-weight:900; color:#2D3436; font-size:1.1em;">{m}</div>
-                    <div style="color:{color}; font-size:1.4em; font-weight:900;">${bal:,.2f}</div>
+                <div class="balance-card" style="border-left: 6px solid {color};">
+                    <div style="font-weight:800; color:#424242; font-size:1em;">{m}</div>
+                    <div style="color:{color}; font-size:1.3em; font-weight:900;">${bal:,.2f}</div>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -204,11 +196,11 @@ col1, col2 = st.columns([3, 2], gap="large")
 with col1:
     st.markdown("### 📝 紀錄支出")
     if not members:
-        st.info("👋 歡迎！請先在左側側邊欄新增旅伴，開啟分帳之旅。")
+        st.info("👋 歡迎！請先在左側選單新增旅伴，開啟您的分帳旅程！")
     else:
         with st.form("expense_form", clear_on_submit=True):
             p = st.selectbox("付款人", members)
-            d = st.text_input("項目描述", placeholder="例如：築地市場壽司、利木津巴士...")
+            d = st.text_input("項目描述", placeholder="例如：築地市場壽司")
             a = st.number_input("消費金額", min_value=0.0, step=100.0)
             ps = st.multiselect("分擔成員", members, default=members)
             if st.form_submit_button("🚀 儲存紀錄", use_container_width=True):
@@ -220,15 +212,15 @@ with col1:
     st.markdown("### 📖 消費流水帳")
     history = st.session_state.app.history
     if not history:
-        st.markdown("<p style='color:#636e72; font-weight:700;'>目前尚無任何紀錄，快來添加第一筆吧！</p>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#757575; font-weight:500;'>目前還沒有任何消費紀錄喔！</p>", unsafe_allow_html=True)
     else:
         for item in reversed(history):
             st.markdown(f"""
                 <div class="info-card">
-                    <h4 style="margin:0; color:#311B92; font-weight:900;">{item['description'] if item['description'] else '一般支出'}</h4>
-                    <p style="margin:10px 0; font-size:1.1em;"><b>{item['payer']}</b> 支付了 <b style="color:#764ba2;">${item['amount']:,.2f}</b></p>
-                    <div style="background:rgba(0,0,0,0.03); padding:8px 12px; border-radius:10px;">
-                        <small style="color:#636e72;">分擔對象：{', '.join(item['participants'])}</small>
+                    <h4 style="margin:0; color:#1A237E; font-weight:900;">{item['description'] if item['description'] else '一般支出'}</h4>
+                    <p style="margin:10px 0; font-size:1.1em; color: #424242;"><b>{item['payer']}</b> 支付了 <b style="color:#3F51B5;">${item['amount']:,.2f}</b></p>
+                    <div style="background:#F5F5F5; padding:10px; border-radius:8px; border: 1px solid #EEEEEE;">
+                        <small style="color:#616161; font-weight: 600;">分擔對象：{', '.join(item['participants'])}</small>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
@@ -250,9 +242,9 @@ with col2:
             st.session_state.app.delete_transaction_by_index(len(history)-1)
             st.rerun()
     
-    if st.button("🧹 重置所有帳目", use_container_width=True):
-        if st.checkbox("確認完全清空數據？"):
+    if st.button("🧹 清除所有數據", use_container_width=True):
+        if st.checkbox("我確認要重置本房間帳目"):
             st.session_state.app.reset_all()
             st.rerun()
 
-st.markdown("<br><p style='text-align:center; color:#311B92; font-weight:900; font-size: 1.1em; opacity:0.8;'>FairShare | 每一筆開銷，都清清楚楚</p>", unsafe_allow_html=True)
+st.markdown("<br><p style='text-align:center; color:#1A237E; font-weight:800; font-size: 1em; opacity:0.6;'>FairShare | 每一筆開銷，都清清楚楚</p>", unsafe_allow_html=True)
