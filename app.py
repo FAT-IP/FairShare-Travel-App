@@ -16,12 +16,12 @@ def get_db_connection(trip_id):
 # --- 2. 頁面配置 ---
 st.set_page_config(page_title="FairShare | 專業風格版", layout="wide")
 
-# --- 3. 預設風格定義 ---
+# --- 3. 預設風格定義 (已優化綠色與黑色) ---
 THEMES = {
-    "紫色": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
-    "藍色": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
-    "綠色": {"bg": "#064e3b", "text": "#064e3b", "accent": "#10b981"},
-    "黑色": {"bg": "#000000", "text": "#ffffff", "accent": "#ffffff"}
+    "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
+    "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
+    "莫蘭迪森林綠": {"bg": "#1a2e25", "text": "#e0e7e1", "accent": "#5eead4"},
+    "商務碳墨黑": {"bg": "#121212", "text": "#e5e5e5", "accent": "#a3a3a3"}
 }
 
 # --- 4. 狀態初始化 ---
@@ -31,7 +31,7 @@ if 'trip_id' not in st.session_state:
 with st.sidebar:
     st.markdown("<h1 style='color:#da22ff; font-weight:900;'>風格中心</h1>", unsafe_allow_html=True)
     
-    # 改為下拉式選單選擇預設風格，不再使用自由選擇器
+    # 選擇風格
     theme_choice = st.selectbox("切換視覺風格", list(THEMES.keys()))
     current_theme = THEMES[theme_choice]
     
@@ -60,18 +60,17 @@ st.markdown(f"""
     }}
 
     .hero-banner {{
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
-        border: 2px solid {current_theme['accent']};
-        opacity: 0.8;
+        border: 1px solid {current_theme['accent']};
         padding: 40px;
-        border-radius: 35px;
+        border-radius: 30px;
         text-align: center;
         margin-bottom: 30px;
     }}
     .hero-title {{
         font-size: 4.5em !important;
-        background: linear-gradient(to right, {current_theme['accent']}, #9733ee);
+        background: linear-gradient(to right, {current_theme['accent']}, #ffffff);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         font-weight: 900;
@@ -91,11 +90,20 @@ st.markdown(f"""
 
     .stButton>button {{
         background: {current_theme['accent']} !important;
-        color: {'#000000' if current_theme['accent'] == '#ffffff' else '#ffffff'} !important;
+        color: #121212 !important;
         border: none !important;
         border-radius: 12px !important;
         font-weight: bold !important;
         width: 100%;
+    }}
+    
+    /* 修正下拉選單與輸入框在深色背景下的顯示 */
+    .stSelectbox div[data-baseweb="select"] {{
+        background-color: rgba(255, 255, 255, 0.1) !important;
+    }}
+    input {{
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        color: white !important;
     }}
     </style>
     """, unsafe_allow_html=True)
@@ -147,7 +155,7 @@ else:
             f_c1, f_c2 = st.columns(2)
             with f_c1:
                 payer = st.selectbox("誰付的錢？", members_df['name'].tolist())
-                desc = st.text_input("消費項目", placeholder="例如：晚餐支出")
+                desc = st.text_input("消費項目", placeholder="例如：交通費、景點門票")
             with f_c2:
                 amount = st.number_input("總金額", min_value=0.0, step=10.0)
                 participants = st.multiselect("誰要平分？", members_df['name'].tolist(), default=members_df['name'].tolist())
@@ -215,4 +223,4 @@ else:
                 conn.commit()
                 st.rerun()
 
-st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.0 | CURATED THEMES</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.1 | OPTIMIZED THEMES</div>", unsafe_allow_html=True)
