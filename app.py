@@ -4,11 +4,14 @@ import pandas as pd
 import time
 import random
 import string
+import secrets  # 使用 secrets 模組提供更強的隨機性
 
 # --- 1. 資料庫連線函式 ---
 def get_db_connection(trip_id):
     """根據旅程代碼建立/連接獨立的資料庫檔案"""
     safe_id = trip_id.strip() if trip_id.strip() else "default"
+    # 移除非法字元以確保檔名安全
+    safe_id = "".join([c for c in safe_id if c.isalnum() or c in ('-', '_')]).strip()
     db_name = f"trip_data_{safe_id}.db"
     conn = sqlite3.connect(db_name, check_same_thread=False)
     conn.execute('CREATE TABLE IF NOT EXISTS members (name TEXT PRIMARY KEY, balance REAL)')
@@ -30,35 +33,46 @@ THEMES = {
 if 'trip_id' not in st.session_state:
     st.session_state.trip_id = "default"
 
-# 用於隨機生成的暫存狀態
 if 'temp_id' not in st.session_state:
     st.session_state.temp_id = st.session_state.trip_id
 
 with st.sidebar:
     st.markdown("<h1 style='color:#da22ff; font-weight:900;'>風格中心</h1>", unsafe_allow_html=True)
     
-    # 選擇風格
     theme_choice = st.selectbox("切換視覺風格", list(THEMES.keys()))
     current_theme = THEMES[theme_choice]
     
     st.markdown("---")
-    
-    # 建立/進入房間區塊
     st.markdown("### 房間管理")
     
-    # 隨機生成功能
-    if st.button("🎲 隨機生成房間代碼"):
-        random_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    # 策略 1: 增加代碼長度與隨機強度
+    # 使用 secrets.choice 代替 random.choices 增加安全性
+    # 將長度從 6 增加到 8 或 10，能幾何倍數降低重複率
+    if st.button("🎲 隨機生成強效代碼"):
+        # 組合包含：大寫、小寫、數字，長度 10
+        # 組合數為 (26+26+10)^10，幾乎不可能在一般使用下重複
+        alphabet = string.ascii_letters + string.digits
+        random_id = ''.join(secrets.choice(alphabet) for _ in range(10))
         st.session_state.temp_id = random_id
         st.rerun()
 
-    input_id = st.text_input("建立房間 / 進入房間", value=st.session_state.temp_id, placeholder="請輸入旅程代碼...")
+    input_id = st.text_input("建立房間 / 進入房間", value=st.session_state.temp_id, placeholder="輸入自定義或生成的代碼...")
     
-    if st.button("進入 / 切換房間"):
-        if input_id:
-            st.session_state.trip_id = input_id
-            st.session_state.temp_id = input_id
-            st.success(f"已成功進入房間: {input_id}")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("進入 / 切換房間"):
+            if input_id:
+                st.session_state.trip_id = input_id
+                st.session_state.temp_id = input_id
+                st.success(f"已進入房間: {input_id}")
+                time.sleep(0.5)
+                st.rerun()
+    
+    with c2:
+        if st.button("🚪 退出房間"):
+            st.session_state.trip_id = "default"
+            st.session_state.temp_id = "default"
+            st.toast("已回到大廳")
             time.sleep(0.5)
             st.rerun()
 
@@ -67,67 +81,40 @@ with st.sidebar:
 # --- 5. 靜態 CSS 樣式 ---
 st.markdown(f"""
     <style>
-    .stApp {{
-        background-color: {current_theme['bg']} !important;
-        color: {current_theme['text']} !important;
-    }}
-    
-    .stApp p, .stApp span, .stApp label, .stApp h1, .stApp h2, .stApp h3 {{
-        color: {current_theme['text']} !important;
-    }}
-
+    .stApp {{ background-color: {current_theme['bg']} !important; color: {current_theme['text']} !important; }}
+    .stApp p, .stApp span, .stApp label, .stApp h1, .stApp h2, .stApp h3 {{ color: {current_theme['text']} !important; }}
     .hero-banner {{
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
         border: 1px solid {current_theme['accent']};
-        padding: 40px;
-        border-radius: 30px;
-        text-align: center;
-        margin-bottom: 30px;
+        padding: 40px; border-radius: 30px; text-align: center; margin-bottom: 30px;
     }}
     .hero-title {{
         font-size: 4.5em !important;
         background: linear-gradient(to right, {current_theme['accent']}, #ffffff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 900;
-        margin-bottom: 0;
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        font-weight: 900; margin-bottom: 0;
     }}
-
     .neon-card {{
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 20px;
-        padding: 20px;
-        margin-bottom: 15px;
+        border-radius: 20px; padding: 20px; margin-bottom: 15px;
     }}
-
     .positive {{ color: #2ed573 !important; font-weight: bold; }}
     .negative {{ color: #ff4757 !important; font-weight: bold; }}
-
     .stButton>button {{
         background: {current_theme['accent']} !important;
-        color: #121212 !important;
-        border: none !important;
-        border-radius: 12px !important;
-        font-weight: bold !important;
-        width: 100%;
+        color: #121212 !important; border: none !important;
+        border-radius: 12px !important; font-weight: bold !important; width: 100%;
     }}
-    
-    .stSelectbox div[data-baseweb="select"] {{
-        background-color: rgba(255, 255, 255, 0.1) !important;
-    }}
-    input {{
-        background-color: rgba(255, 255, 255, 0.05) !important;
-        color: white !important;
-    }}
+    .stSelectbox div[data-baseweb="select"] {{ background-color: rgba(255, 255, 255, 0.1) !important; }}
+    input {{ background-color: rgba(255, 255, 255, 0.05) !important; color: white !important; }}
     </style>
     """, unsafe_allow_html=True)
 
 # --- 6. 側邊欄資料處理 ---
 with st.sidebar:
     conn = get_db_connection(st.session_state.trip_id)
-    
     st.markdown("### 成員名單")
     new_member = st.text_input("輸入新隊友姓名", key="new_mem")
     if st.button("確認加入"):
@@ -161,21 +148,19 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 if members_df.empty:
-    st.info("歡迎！請先在左側選單新增成員，即可開始紀錄支出。")
+    st.info("💡 提示：輸入一個複雜的代碼或使用隨機生成，可以確保您的帳本不被他人誤闖。")
 else:
     col1, col2 = st.columns([3, 2], gap="large")
-
     with col1:
         st.markdown(f"<h2 style='color:{current_theme['accent']};'>紀錄支出</h2>", unsafe_allow_html=True)
         with st.form("expense_form", clear_on_submit=True):
             f_c1, f_c2 = st.columns(2)
             with f_c1:
                 payer = st.selectbox("誰付的錢？", members_df['name'].tolist())
-                desc = st.text_input("消費項目", placeholder="例如：交通費、景點門票")
+                desc = st.text_input("消費項目", placeholder="例如：晚餐、計程車")
             with f_c2:
                 amount = st.number_input("總金額", min_value=0.0, step=10.0)
                 participants = st.multiselect("誰要平分？", members_df['name'].tolist(), default=members_df['name'].tolist())
-            
             if st.form_submit_button("發送到帳本"):
                 if amount > 0 and participants:
                     share = amount / len(participants)
@@ -213,7 +198,6 @@ else:
             bal_dict = members_df.set_index('name')['balance'].to_dict()
             debtors = {k: v for k, v in bal_dict.items() if v < -0.01}
             creditors = {k: v for k, v in bal_dict.items() if v > 0.01}
-            
             if not debtors:
                 st.success("目前帳目完全平衡！")
             else:
@@ -239,4 +223,4 @@ else:
                 conn.commit()
                 st.rerun()
 
-st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.5 | RANDOM ID GENERATOR</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v7.0 | HIGH-SECURITY ID GENERATOR</div>", unsafe_allow_html=True)
