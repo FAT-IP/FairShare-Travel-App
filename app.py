@@ -58,13 +58,13 @@ if 'first_load_done' not in st.session_state:
 # --- 2. 多房間邏輯初始化 ---
 with st.sidebar:
     st.title("🏠 房間系統")
-    trip_code = st.text_input("輸入旅程代碼 (例如：SEOUL2026)", value="default")
+    trip_code = st.text_input("輸入旅程代碼 (例如：Japan123)", value="Enter a Name")
     
     if 'app' not in st.session_state or st.session_state.get('current_trip') != trip_code:
         st.session_state.app = FairShareModel(trip_id=trip_code)
         st.session_state.current_trip = trip_code
     
-    st.info(f"📍 目前位置：{trip_code}")
+    st.info(f"📍 目前房間：{trip_code}")
 
 # --- 3. 恢復豐富漸層與對比度強化 CSS (含側邊欄優化) ---
 st.markdown("""
@@ -165,7 +165,7 @@ st.markdown("""
 st.markdown(f"""
     <div class="main-banner">
         <h1 style="margin: 0; font-size: 3.5em; font-weight: 900; letter-spacing: 3px;">✈️ FairShare</h1>
-        <p style="font-size: 1.3em; opacity: 0.95; margin-top: 15px; font-weight: 500;">旅程代碼：<span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 8px; font-family: monospace;">{trip_code}</span></p>
+        <p style="font-size: 1.3em; opacity: 0.95; margin-top: 15px; font-weight: 500;">房間代碼：<span style="background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 8px; font-family: monospace;">{trip_code}</span></p>
     </div>
     """, unsafe_allow_html=True)
 
