@@ -2,6 +2,8 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import time
+import random
+import string
 
 # --- 1. 資料庫連線函式 ---
 def get_db_connection(trip_id):
@@ -16,19 +18,21 @@ def get_db_connection(trip_id):
 # --- 2. 頁面配置 ---
 st.set_page_config(page_title="FairShare | 專業風格版", layout="wide")
 
-# --- 3. 預設風格定義 (包含新加入的配色) ---
+# --- 3. 預設風格定義 ---
 THEMES = {
     "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
     "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
-    "莫蘭迪森林綠": {"bg": "#1a2e25", "text": "#e0e7e1", "accent": "#5eead4"},
     "商務碳墨黑": {"bg": "#121212", "text": "#e5e5e5", "accent": "#a3a3a3"},
-    "活力琥珀橙": {"bg": "#2B3C3D", "text": "#ffffff", "accent": "#FF7400"},
-    "磨砂夕陽金": {"bg": "#1C1C1A", "text": "#ffffff", "accent": "#FF7911"}
+    "活力琥珀橙": {"bg": "#2B3C3D", "text": "#ffffff", "accent": "#FF7400"}
 }
 
 # --- 4. 狀態初始化 ---
 if 'trip_id' not in st.session_state:
     st.session_state.trip_id = "default"
+
+# 用於隨機生成的暫存狀態
+if 'temp_id' not in st.session_state:
+    st.session_state.temp_id = st.session_state.trip_id
 
 with st.sidebar:
     st.markdown("<h1 style='color:#da22ff; font-weight:900;'>風格中心</h1>", unsafe_allow_html=True)
@@ -38,12 +42,23 @@ with st.sidebar:
     current_theme = THEMES[theme_choice]
     
     st.markdown("---")
-    input_id = st.text_input("輸入旅程代碼", value=st.session_state.trip_id)
     
-    if st.button("進入/切換房間"):
+    # 建立/進入房間區塊
+    st.markdown("### 房間管理")
+    
+    # 隨機生成功能
+    if st.button("🎲 隨機生成房間代碼"):
+        random_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        st.session_state.temp_id = random_id
+        st.rerun()
+
+    input_id = st.text_input("建立房間 / 進入房間", value=st.session_state.temp_id, placeholder="請輸入旅程代碼...")
+    
+    if st.button("進入 / 切換房間"):
         if input_id:
             st.session_state.trip_id = input_id
-            st.success(f"已切換至: {input_id}")
+            st.session_state.temp_id = input_id
+            st.success(f"已成功進入房間: {input_id}")
             time.sleep(0.5)
             st.rerun()
 
@@ -99,7 +114,6 @@ st.markdown(f"""
         width: 100%;
     }}
     
-    /* 修正下拉選單與輸入框在深色背景下的顯示 */
     .stSelectbox div[data-baseweb="select"] {{
         background-color: rgba(255, 255, 255, 0.1) !important;
     }}
@@ -225,4 +239,4 @@ else:
                 conn.commit()
                 st.rerun()
 
-st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.2 | NEW CUSTOM THEMES</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.5 | RANDOM ID GENERATOR</div>", unsafe_allow_html=True)
