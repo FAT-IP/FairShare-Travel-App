@@ -3,16 +3,20 @@ import os
 
 class FairShareModel:
     def __init__(self, trip_id="default"):
-        # 1. 確保 trip_id 即使傳入 None 或空字串也能運作
+        """
+        初始化分帳模型
+        trip_id: 旅程代碼，用於隔離不同用戶的資料
+        """
+        # 確保 trip_id 即使傳入 None 或空字串也能運作
         self.trip_id = trip_id if trip_id and trip_id.strip() else "default"
-        # 2. 根據代碼產生獨立檔名
+        # 根據代碼產生獨立檔名，實現多房間資料隔離
         self.filename = f"data_{self.trip_id}.json"
         self.members = {}   
         self.history = []   
         self.load_data()
 
     def load_data(self):
-        """讀取檔案，若不存在則初始化"""
+        """讀取 JSON 檔案，若不存在則初始化空資料"""
         if os.path.exists(self.filename):
             try:
                 with open(self.filename, 'r', encoding='utf-8') as f:
@@ -26,7 +30,7 @@ class FairShareModel:
             self.members, self.history = {}, []
 
     def save_data(self):
-        """儲存目前的狀態到 JSON"""
+        """將目前的成員餘額與消費紀錄儲存到專屬 JSON 檔"""
         try:
             with open(self.filename, 'w', encoding='utf-8') as f:
                 json.dump({
@@ -37,6 +41,7 @@ class FairShareModel:
             print(f"儲存失敗: {e}")
 
     def add_member(self, name):
+        """新增旅伴成員"""
         name = name.strip() if name else ""
         if name and name not in self.members:
             self.members[name] = 0.0
@@ -45,8 +50,8 @@ class FairShareModel:
         return False
 
     def remove_member(self, name):
+        """移除旅伴，僅限餘額為 0 的成員以維持帳目平衡"""
         if name in self.members:
-            # 只有餘額為 0 才能移除，避免帳目對不起來
             if abs(self.members[name]) < 0.01:
                 del self.members[name]
                 self.save_data()
@@ -55,12 +60,13 @@ class FairShareModel:
         return False, "找不到成員"
 
     def record_transaction(self, payer, amount, participants, description):
+        """紀錄一筆消費支出並更新成員餘額"""
         if not participants or amount <= 0: return False
         
-        # 計算平分金額
+        # 計算每人應分擔的金額
         share = round(amount / len(participants), 2)
         
-        # 更新餘額：付款人加上總額，參與者扣除平分額
+        # 更新餘額：付款人增加（債權），參與者減少（債務）
         if payer in self.members:
             self.members[payer] += amount
         for p in participants:
@@ -78,8 +84,8 @@ class FairShareModel:
 
     def delete_transaction_by_index(self, index):
         """
-        修正 AttributeError 的關鍵：
-        撤銷和刪除特定項目都共用這個邏輯，並會自動回推餘額。
+        刪除特定 index 的紀錄並回推受影響成員的餘額
+        這是撤銷功能與精確刪除的核心
         """
         if 0 <= index < len(self.history):
             target = self.history.pop(index)
@@ -89,7 +95,7 @@ class FairShareModel:
             
             share = round(amount / len(participants), 2)
             
-            # 逆向回推：付款人減去，參與者加回
+            # 逆向回推邏輯
             if payer in self.members:
                 self.members[payer] -= amount
             for p in participants:
@@ -101,7 +107,7 @@ class FairShareModel:
         return False
 
     def reset_all(self):
-        """刪除目前代碼對應的資料檔並重置記憶體"""
+        """重置當前房間的所有資料並刪除本地檔案"""
         self.members = {}
         self.history = []
         if os.path.exists(self.filename):
@@ -112,7 +118,7 @@ class FairShareModel:
         self.save_data()
 
     def calculate_settlement(self):
-        """結算建議：誰該給誰錢"""
+        """生成結算建議，計算最精簡的還款路徑"""
         debtors = [[n, b] for n, b in self.members.items() if b < -0.01]
         creditors = [[n, b] for n, b in self.members.items() if b > 0.01]
         instructions = []
@@ -131,19 +137,3 @@ class FairShareModel:
             if abs(creditors[0][1]) < 0.01: creditors.pop(0)
             
         return instructions
-```
-
-### 💡 搭配 `app.py` 的小撇步：
-為了防止 `image_596ada.png` 的 `AttributeError` 再次發生，請確保你的 `app.py` 初始化邏輯長這樣：
-
-```python
-# 在 app.py 中建議這樣寫：
-trip_code = st.sidebar.text_input("輸入旅程代碼", value="default")
-
-# 檢查 session_state 中是否有這些 key，沒有就先給初始值
-if 'current_trip' not in st.session_state:
-    st.session_state.current_trip = "default"
-
-if 'app' not in st.session_state or st.session_state.current_trip != trip_code:
-    st.session_state.app = FairShareModel(trip_id=trip_code)
-    st.session_state.current_trip = trip_code
