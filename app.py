@@ -4,24 +4,49 @@ import pandas as pd
 import time
 import random
 import string
-import secrets  # 使用 secrets 模組提供更強的隨機性
+import secrets
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-# --- 1. 資料庫連線函式 ---
+# --- 1. 獲取 Session ID (用於私有大廳) ---
+def get_session_id():
+    ctx = get_script_run_ctx()
+    if ctx:
+        return ctx.session_id
+    return "local_user"
+
+# --- 2. 資料庫連線函式 ---
 def get_db_connection(trip_id):
     """根據旅程代碼建立/連接獨立的資料庫檔案"""
     safe_id = trip_id.strip() if trip_id.strip() else "default"
-    # 移除非法字元以確保檔名安全
-    safe_id = "".join([c for c in safe_id if c.isalnum() or c in ('-', '_')]).strip()
-    db_name = f"trip_data_{safe_id}.db"
+    
+    # 私有化邏輯：如果是在大廳，加上 Session ID 確保資料隔離
+    if safe_id == "default":
+        session_id = get_session_id()
+        # 取前 8 位即可，確保檔名簡潔
+        db_name = f"trip_data_private_{session_id[:8]}.db"
+    else:
+        # 如果是特定房間，則使用原始代碼，方便多人共享
+        clean_id = "".join([c for c in safe_id if c.isalnum() or c in ('-', '_')]).strip()
+        db_name = f"trip_data_shared_{clean_id}.db"
+    
     conn = sqlite3.connect(db_name, check_same_thread=False)
     conn.execute('CREATE TABLE IF NOT EXISTS members (name TEXT PRIMARY KEY, balance REAL)')
     conn.execute('CREATE TABLE IF NOT EXISTS history (id INTEGER PRIMARY KEY AUTOINCREMENT, payer TEXT, amount REAL, participants TEXT, description TEXT, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)')
+    
+    # 房間初始化
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM members')
+    if cursor.fetchone()[0] == 0:
+        default_user = "本人" if safe_id == "default" else "管理員"
+        conn.execute('INSERT INTO members (name, balance) VALUES (?, 0)', (default_user,))
+        conn.commit()
+            
     return conn
 
-# --- 2. 頁面配置 ---
-st.set_page_config(page_title="FairShare | 專業風格版", layout="wide")
+# --- 3. 頁面配置 ---
+st.set_page_config(page_title="FairShare | 極致私隱版", layout="wide")
 
-# --- 3. 預設風格定義 ---
+# --- 4. 預設風格定義 ---
 THEMES = {
     "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
     "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
@@ -29,12 +54,14 @@ THEMES = {
     "活力琥珀橙": {"bg": "#2B3C3D", "text": "#ffffff", "accent": "#FF7400"}
 }
 
-# --- 4. 狀態初始化 ---
+# --- 5. 狀態初始化 ---
 if 'trip_id' not in st.session_state:
     st.session_state.trip_id = "default"
 
 if 'temp_id' not in st.session_state:
     st.session_state.temp_id = st.session_state.trip_id
+
+is_lobby = st.session_state.trip_id == "default"
 
 with st.sidebar:
     st.markdown("<h1 style='color:#da22ff; font-weight:900;'>風格中心</h1>", unsafe_allow_html=True)
@@ -45,40 +72,37 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### 房間管理")
     
-    # 策略 1: 增加代碼長度與隨機強度
-    # 使用 secrets.choice 代替 random.choices 增加安全性
-    # 將長度從 6 增加到 8 或 10，能幾何倍數降低重複率
-    if st.button("🎲 隨機生成強效代碼"):
-        # 組合包含：大寫、小寫、數字，長度 10
-        # 組合數為 (26+26+10)^10，幾乎不可能在一般使用下重複
+    if st.button("🎲 生成多人共享代碼"):
         alphabet = string.ascii_letters + string.digits
-        random_id = ''.join(secrets.choice(alphabet) for _ in range(10))
+        random_id = ''.join(secrets.choice(alphabet) for _ in range(12))
         st.session_state.temp_id = random_id
         st.rerun()
 
-    input_id = st.text_input("建立房間 / 進入房間", value=st.session_state.temp_id, placeholder="輸入自定義或生成的代碼...")
+    input_id = st.text_input("房間代碼 (留空回大廳)", value=st.session_state.temp_id)
     
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("進入 / 切換房間"):
-            if input_id:
-                st.session_state.trip_id = input_id
-                st.session_state.temp_id = input_id
-                st.success(f"已進入房間: {input_id}")
-                time.sleep(0.5)
-                st.rerun()
-    
-    with c2:
-        if st.button("🚪 退出房間"):
-            st.session_state.trip_id = "default"
-            st.session_state.temp_id = "default"
-            st.toast("已回到大廳")
+    col_btn1, col_btn2 = st.columns(2)
+    with col_btn1:
+        if st.button("進入房間"):
+            st.session_state.trip_id = input_id if input_id else "default"
+            st.session_state.temp_id = st.session_state.trip_id
+            st.success("房間切換成功")
             time.sleep(0.5)
             st.rerun()
+    
+    with col_btn2:
+        if st.button("🚪 回到私有大廳"):
+            st.session_state.trip_id = "default"
+            st.session_state.temp_id = "default"
+            st.rerun()
+
+    if is_lobby:
+        st.info("🔒 您目前處於「私有大廳」。此處的數據僅綁定於您目前的瀏覽器 Session，其他人無法查看。")
+    else:
+        st.warning("👥 您處於「共享房間」。知道此代碼的任何人皆可存取此數據。")
 
     st.markdown("---")
 
-# --- 5. 靜態 CSS 樣式 ---
+# --- 6. CSS 樣式 ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {current_theme['bg']} !important; color: {current_theme['text']} !important; }}
@@ -101,126 +125,108 @@ st.markdown(f"""
         border-radius: 20px; padding: 20px; margin-bottom: 15px;
     }}
     .positive {{ color: #2ed573 !important; font-weight: bold; }}
-    .negative {{ color: #ff4757 !important; font-weight: bold; }}
     .stButton>button {{
         background: {current_theme['accent']} !important;
         color: #121212 !important; border: none !important;
         border-radius: 12px !important; font-weight: bold !important; width: 100%;
     }}
-    .stSelectbox div[data-baseweb="select"] {{ background-color: rgba(255, 255, 255, 0.1) !important; }}
     input {{ background-color: rgba(255, 255, 255, 0.05) !important; color: white !important; }}
     </style>
     """, unsafe_allow_html=True)
 
-# --- 6. 側邊欄資料處理 ---
-with st.sidebar:
-    conn = get_db_connection(st.session_state.trip_id)
-    st.markdown("### 成員名單")
-    new_member = st.text_input("輸入新隊友姓名", key="new_mem")
-    if st.button("確認加入"):
-        if new_member:
-            try:
-                conn.execute('INSERT INTO members (name, balance) VALUES (?, 0)', (new_member,))
-                conn.commit()
-                st.rerun()
-            except:
-                st.warning("此成員已在名單中")
+# --- 7. 核心資料處理 ---
+conn = get_db_connection(st.session_state.trip_id)
+members_df = pd.read_sql('SELECT * FROM members', conn)
 
-    st.markdown("### 即時財務狀況")
-    members_df = pd.read_sql('SELECT * FROM members', conn)
+with st.sidebar:
+    if not is_lobby:
+        st.markdown("### 旅伴名單")
+        new_member = st.text_input("新增成員姓名")
+        if st.button("確認加入"):
+            if new_member:
+                try:
+                    conn.execute('INSERT INTO members (name, balance) VALUES (?, 0)', (new_member,))
+                    conn.commit()
+                    st.rerun()
+                except:
+                    st.warning("名稱重複")
+
+    st.markdown("### 財務概覽")
     for _, row in members_df.iterrows():
-        cls = "positive" if row['balance'] >= 0 else "negative"
+        display_name = "我的累計支出" if is_lobby and row['name'] == "本人" else row['name']
+        val = abs(row['balance'])
         st.markdown(f"""
             <div class="neon-card">
-                <div style="font-size:0.8em; opacity:0.6;">{row['name']}</div>
-                <div class="{cls}" style="font-size:1.4em;">${row['balance']:,.2f}</div>
+                <div style="font-size:0.8em; opacity:0.6;">{display_name}</div>
+                <div class="positive" style="font-size:1.4em;">${val:,.2f}</div>
             </div>
         """, unsafe_allow_html=True)
 
-# --- 7. 主畫面內容 ---
+# --- 8. 主畫面 ---
+title_text = "🔒 私有記帳大廳" if is_lobby else "👥 多人分帳空間"
 st.markdown(f"""
     <div class="hero-banner">
-        <h1 class="hero-title">FairShare</h1>
-        <p style="opacity:0.7; font-size:1.2em;">
-            當前房間：<span style="color:{current_theme['accent']}; font-weight:bold; font-size:1.5em;">{st.session_state.trip_id}</span>
-        </p>
+        <h1 class="hero-title">{title_text}</h1>
+        <p style="opacity:0.6;">{ '數據僅存於此 Session' if is_lobby else '房間代碼：' + st.session_state.trip_id }</p>
     </div>
     """, unsafe_allow_html=True)
 
-if members_df.empty:
-    st.info("💡 提示：輸入一個複雜的代碼或使用隨機生成，可以確保您的帳本不被他人誤闖。")
-else:
-    col1, col2 = st.columns([3, 2], gap="large")
-    with col1:
-        st.markdown(f"<h2 style='color:{current_theme['accent']};'>紀錄支出</h2>", unsafe_allow_html=True)
-        with st.form("expense_form", clear_on_submit=True):
-            f_c1, f_c2 = st.columns(2)
-            with f_c1:
-                payer = st.selectbox("誰付的錢？", members_df['name'].tolist())
-                desc = st.text_input("消費項目", placeholder="例如：晚餐、計程車")
-            with f_c2:
-                amount = st.number_input("總金額", min_value=0.0, step=10.0)
-                participants = st.multiselect("誰要平分？", members_df['name'].tolist(), default=members_df['name'].tolist())
-            if st.form_submit_button("發送到帳本"):
-                if amount > 0 and participants:
-                    share = amount / len(participants)
-                    conn.execute('UPDATE members SET balance = balance + ? WHERE name = ?', (amount, payer))
-                    for p in participants:
-                        conn.execute('UPDATE members SET balance = balance - ? WHERE name = ?', (share, p))
-                    conn.execute('INSERT INTO history (payer, amount, participants, description) VALUES (?, ?, ?, ?)',
-                                 (payer, amount, ",".join(participants), desc))
-                    conn.commit()
-                    st.toast("紀錄成功！")
-                    time.sleep(0.5)
-                    st.rerun()
+col_main = st.columns([3, 2] if not is_lobby else [1])
 
-        st.markdown(f"<h2 style='color:{current_theme['accent']}; margin-top:30px;'>消費紀錄流</h2>", unsafe_allow_html=True)
-        history_df = pd.read_sql('SELECT * FROM history ORDER BY id DESC', conn)
-        if history_df.empty:
-            st.markdown(f"<p style='opacity:0.4;'>尚無交易紀錄...</p>", unsafe_allow_html=True)
-        else:
-            for _, row in history_df.iterrows():
-                st.markdown(f"""
-                    <div class="neon-card" style="border-left: 4px solid {current_theme['accent']};">
-                        <div style="display:flex; justify-content:space-between;">
-                            <span style="font-weight:bold; color:{current_theme['accent']}; font-size:1.2em;">{row['description']}</span>
-                            <span style="font-family:monospace; font-weight:900;">${row['amount']:,.2f}</span>
-                        </div>
-                        <div style="font-size:0.85em; opacity:0.7; margin-top:10px;">
-                            由 {row['payer']} 支付，分擔對象：{row['participants']}
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
-
-    with col2:
-        st.markdown(f"<h2 style='color:{current_theme['accent']};'>智能結算建議</h2>", unsafe_allow_html=True)
-        if st.button("執行運算"):
-            bal_dict = members_df.set_index('name')['balance'].to_dict()
-            debtors = {k: v for k, v in bal_dict.items() if v < -0.01}
-            creditors = {k: v for k, v in bal_dict.items() if v > 0.01}
-            if not debtors:
-                st.success("目前帳目完全平衡！")
+with col_main[0]:
+    st.markdown(f"<h2 style='color:{current_theme['accent']};'>{'＋ 新增個人紀錄' if is_lobby else '支出紀錄'}</h2>", unsafe_allow_html=True)
+    with st.form("expense_form", clear_on_submit=True):
+        c1, c2 = st.columns(2)
+        with c1:
+            payer = "本人" if is_lobby else st.selectbox("付款人", members_df['name'].tolist())
+            desc = st.text_input("項目名稱", placeholder="例如：午餐")
+        with c2:
+            amount = st.number_input("金額", min_value=0.0, step=10.0)
+            if not is_lobby:
+                participants = st.multiselect("參與平分者", members_df['name'].tolist(), default=members_df['name'].tolist())
             else:
-                for d_name, d_amt in debtors.items():
-                    for c_name, c_amt in creditors.items():
-                        if d_amt >= 0: break
-                        pay = min(abs(d_amt), c_amt)
-                        if pay > 0:
-                            st.markdown(f"""
-                                <div style="padding:15px; background:rgba(255,255,255,0.05); border:1px solid {current_theme['accent']}; border-radius:12px; margin-bottom:8px;">
-                                    {d_name} 應支付給 {c_name}<br>
-                                    <span style="font-size:1.3em; font-weight:bold; color:{current_theme['accent']};">${pay:,.2f}</span>
-                                </div>
-                            """, unsafe_allow_html=True)
-                            d_amt += pay
-                            creditors[c_name] -= pay
-
-        st.markdown("<br><br><br>", unsafe_allow_html=True)
-        with st.expander("管理選項"):
-            if st.button("清空目前房間所有數據"):
-                conn.execute('DELETE FROM members')
-                conn.execute('DELETE FROM history')
+                participants = ["本人"]
+        
+        if st.form_submit_button("送出紀錄"):
+            if amount > 0:
+                share = amount / len(participants)
+                conn.execute('UPDATE members SET balance = balance + ? WHERE name = ?', (amount, payer))
+                for p in participants:
+                    conn.execute('UPDATE members SET balance = balance - ? WHERE name = ?', (share, p))
+                conn.execute('INSERT INTO history (payer, amount, participants, description) VALUES (?, ?, ?, ?)',
+                             (payer, amount, ",".join(participants), desc))
                 conn.commit()
                 st.rerun()
 
-st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v7.0 | HIGH-SECURITY ID GENERATOR</div>", unsafe_allow_html=True)
+    st.markdown("### 歷史清單")
+    history_df = pd.read_sql('SELECT * FROM history ORDER BY id DESC', conn)
+    for _, row in history_df.iterrows():
+        detail = "" if is_lobby else f"<div style='font-size:0.8em; opacity:0.5;'>分攤：{row['participants']}</div>"
+        st.markdown(f"""
+            <div class="neon-card" style="border-left: 3px solid {current_theme['accent']};">
+                <div style="display:flex; justify-content:space-between;">
+                    <b>{row['description']}</b>
+                    <span style="color:{current_theme['accent']};">${row['amount']:,.2f}</span>
+                </div>
+                {detail}
+            </div>
+        """, unsafe_allow_html=True)
+
+if not is_lobby:
+    with col_main[1]:
+        st.markdown("### 結算建議")
+        if st.button("計算還款路徑"):
+            bal = members_df.set_index('name')['balance'].to_dict()
+            for n, b in bal.items():
+                if b < -0.1: st.write(f"❌ {n} 需支付 {abs(b):.1f}")
+                elif b > 0.1: st.write(f"✅ {n} 應收回 {b:.1f}")
+
+st.markdown("<br><br>", unsafe_allow_html=True)
+with st.expander("進階管理"):
+    if st.button("清空目前所有數據"):
+        conn.execute('DELETE FROM history')
+        conn.execute('DELETE FROM members')
+        conn.commit()
+        st.rerun()
+
+st.markdown(f"<div style='text-align:center; opacity:0.2; font-size:0.7em;'>FairShare v8.2 | Session-Based Privacy</div>", unsafe_allow_html=True)
