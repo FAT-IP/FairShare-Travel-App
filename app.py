@@ -16,12 +16,14 @@ def get_db_connection(trip_id):
 # --- 2. 頁面配置 ---
 st.set_page_config(page_title="FairShare | 專業風格版", layout="wide")
 
-# --- 3. 預設風格定義 (已優化綠色與黑色) ---
+# --- 3. 預設風格定義 (包含新加入的配色) ---
 THEMES = {
     "深邃幻魅紫": {"bg": "#1e1e2f", "text": "#ffffff", "accent": "#da22ff"},
     "午夜冷調藍": {"bg": "#0f172a", "text": "#f8fafc", "accent": "#38bdf8"},
     "莫蘭迪森林綠": {"bg": "#1a2e25", "text": "#e0e7e1", "accent": "#5eead4"},
-    "商務碳墨黑": {"bg": "#121212", "text": "#e5e5e5", "accent": "#a3a3a3"}
+    "商務碳墨黑": {"bg": "#121212", "text": "#e5e5e5", "accent": "#a3a3a3"},
+    "活力琥珀橙": {"bg": "#2B3C3D", "text": "#ffffff", "accent": "#FF7400"},
+    "磨砂夕陽金": {"bg": "#1C1C1A", "text": "#ffffff", "accent": "#FF7911"}
 }
 
 # --- 4. 狀態初始化 ---
@@ -223,4 +225,4 @@ else:
                 conn.commit()
                 st.rerun()
 
-st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.1 | OPTIMIZED THEMES</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align:center; margin-top:80px; opacity:0.3; font-size:0.8em;'>FAIRSHARE PRO v6.2 | NEW CUSTOM THEMES</div>", unsafe_allow_html=True)
